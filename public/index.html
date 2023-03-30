@@ -1,24 +1,35 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Interface</title>
     <link rel="stylesheet" href="./css/style.css">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src">
-
-  </head>
-
-  <body>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;">
+</head>
+<body>
     <div id="chat-window">
-      <div id="messages"></div>
-
-      <div id="user-input">
-        <input type="text" id="user-message" placeholder="Type your message...">
-        <button id="send-btn">Send</button>
-      </div>
+        <div id="messages"> </div>
+        <div class="bot-message-container typing-container">
+        <div class="chat-bubble" id="typing-indicator">
+          <div class="typing">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+          </div>
+        </div>
+        <div id="input-area">
+        <div id="user-input">
+            <input type="text" id="user-message" placeholder="Type your message...">
+            <button id="send-btn">Send</button>
+        </div>
+        </div>
     </div>
     
     <script src="/socket.io/socket.io.js"></script>
     
     <script src="./js/main.js"></script>
-  </body>
+</body>
 </html>

@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "tstt"
+    "test": "tstt",
+    "build": "webpack --mode production",
+    "start": "node src/index.js"
+
   },
   "author": "",
   "license": "ISC",
@@ -17,5 +20,8 @@
     "nodemon": "^2.0.22",
     "openai": "^3.2.1",
     "socket.io": "^4.6.1"
+  },
+  "devDependencies": {
+    "webpack-cli": "^5.0.1"
   }
 }
