@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>המילים הראשונות של דניאלה ✨</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Varela+Round&family=Karantina:wght@300;400;700&family=Suez+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
+</head>
+<body>
+  <!-- Floating background elements -->
+  <div class="floating-elements" aria-hidden="true">
+    <span class="float-el" style="--delay: 0s; --duration: 6s; --x: 10%;">⭐</span>
+    <span class="float-el" style="--delay: 1s; --duration: 8s; --x: 25%;">🌙</span>
+    <span class="float-el" style="--delay: 2s; --duration: 7s; --x: 45%;">💫</span>
+    <span class="float-el" style="--delay: 0.5s; --duration: 9s; --x: 65%;">🧸</span>
+    <span class="float-el" style="--delay: 3s; --duration: 6.5s; --x: 80%;">🎀</span>
+    <span class="float-el" style="--delay: 1.5s; --duration: 7.5s; --x: 90%;">🍼</span>
+    <span class="float-el" style="--delay: 2.5s; --duration: 8.5s; --x: 5%;">🌈</span>
+    <span class="float-el" style="--delay: 4s; --duration: 6s; --x: 55%;">☁️</span>
+    <span class="float-el" style="--delay: 3.5s; --duration: 7s; --x: 35%;">🦋</span>
+    <span class="float-el" style="--delay: 0.8s; --duration: 9.5s; --x: 75%;">✨</span>
+  </div>
+
+  <!-- Header -->
+  <header class="main-header">
+    <div class="header-content">
+      <div class="baby-scene">
+        <div class="baby-character">
+          <div class="baby-body">👶</div>
+          <div class="baby-hand wave">✋</div>
+        </div>
+        <div class="baby-blocks">
+          <span class="block block-a">א</span>
+          <span class="block block-b">ב</span>
+          <span class="block block-c">ג</span>
+        </div>
+      </div>
+      <h1 class="site-title">המילים הראשונות של דניאלה</h1>
+      <p class="site-subtitle">כל מילה היא קסם קטן ✨</p>
+    </div>
+  </header>
+
+  <!-- Word Input Section -->
+  <section class="input-section" id="inputSection">
+    <div class="input-container">
+      <div class="marker-area">
+        <div class="marker-line">
+          <div class="marker-dot"></div>
+          <div
+            class="marker-input"
+            id="wordInput"
+            contenteditable="true"
+            data-placeholder="כתבי מילה חדשה..."
+            role="textbox"
+            aria-label="הכניסי מילה חדשה"
+          ></div>
+        </div>
+        <div class="marker-underline"></div>
+      </div>
+      <button class="add-btn" id="addBtn" aria-label="הוסיפי מילה">
+        <span class="add-btn-icon">+</span>
+        <span class="add-btn-text">הוסיפי ✨</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Age Picker Section -->
+  <section class="age-section hidden" id="ageSection">
+    <div class="age-container">
+      <h2 class="age-question" id="ageQuestion"></h2>
+      <div class="age-options" id="ageOptions"></div>
+      <button class="just-now-btn" id="justNowBtn">עכשיו! 🎉</button>
+    </div>
+  </section>
+
+  <!-- Notes Section -->
+  <section class="notes-section hidden" id="notesSection">
+    <div class="notes-container">
+      <h2 class="notes-title" id="notesTitle"></h2>
+      <div
+        class="notes-input"
+        id="notesInput"
+        contenteditable="true"
+        data-placeholder="הוסיפי הקשר או סיפור..."
+        role="textbox"
+        aria-label="הערות"
+      ></div>
+      <div class="notes-actions">
+        <button class="notes-skip-btn" id="notesSkipBtn">דלגי</button>
+        <button class="notes-save-btn" id="notesSaveBtn">שמרי 💕</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Success Animation -->
+  <div class="success-overlay hidden" id="successOverlay">
+    <div class="success-content">
+      <div class="success-emoji">🎉</div>
+      <p class="success-text" id="successText"></p>
+    </div>
+  </div>
+
+  <!-- Words List Section -->
+  <section class="words-section" id="wordsSection">
+    <h2 class="words-title">המילים של דניאלה 💬</h2>
+    <div class="words-counter">
+      <span id="wordCount">0</span> מילים עד עכשיו
+    </div>
+    <div class="words-grid" id="wordsGrid">
+      <!-- Words populated by JS -->
+    </div>
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🌱</div>
+      <p>עוד לא הוספנו מילים...</p>
+      <p class="empty-sub">המילה הראשונה מחכה למעלה ☝️</p>
+    </div>
+  </section>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay hidden" id="editModal">
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose" aria-label="סגירה">✕</button>
+      <h3 class="modal-title">עריכת מילה</h3>
+      <div class="modal-field">
+        <label>מילה</label>
+        <div class="modal-input" id="editWordInput" contenteditable="true" role="textbox"></div>
+      </div>
+      <div class="modal-field">
+        <label>גיל</label>
+        <div class="modal-age-picker" id="editAgePicker"></div>
+      </div>
+      <div class="modal-field">
+        <label>הערות</label>
+        <div class="modal-input modal-notes" id="editNotesInput" contenteditable="true" role="textbox" data-placeholder="הוסיפי הקשר..."></div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-delete-btn" id="editDeleteBtn">מחקי 🗑️</button>
+        <button class="modal-save-btn" id="editSaveBtn">שמרי 💕</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="main-footer">
+    <p>נבנה באהבה עבור דניאלה 💜</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
