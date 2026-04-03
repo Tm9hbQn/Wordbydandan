@@ -11,14 +11,12 @@ let useLocalStorage = false;
 
 function initSupabase() {
   try {
-    if (SUPABASE_URL.includes('xyzcompanyid') || SUPABASE_ANON_KEY === 'your-anon-key-here') {
-      console.log('Supabase not configured, using localStorage');
+    if (SUPABASE_URL.includes('xyzcompanyid') || SUPABASE_ANON_KEY === 'your-anon-key-here' || !window.supabase) {
       useLocalStorage = true;
       return;
     }
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   } catch (e) {
-    console.warn('Supabase init failed, using localStorage:', e);
     useLocalStorage = true;
   }
 }
@@ -210,15 +208,8 @@ function setupEventListeners() {
     }
   });
 
-  // Add button — use pointerdown so it fires before blur/layout-shift on mobile
-  addBtn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    submitWord();
-  });
-  addBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    submitWord();
-  });
+  // Add button
+  addBtn.addEventListener('click', () => submitWord());
 
   // Age picker
   justNowBtn.addEventListener('click', () => selectAge(calculateCurrentAgeMonths()));
@@ -260,8 +251,8 @@ function setupEventListeners() {
   });
 
   // View toggle
-  gridViewBtn.addEventListener('click', () => switchView('grid'));
-  timelineViewBtn.addEventListener('click', () => switchView('timeline'));
+  if (gridViewBtn) gridViewBtn.addEventListener('click', () => switchView('grid'));
+  if (timelineViewBtn) timelineViewBtn.addEventListener('click', () => switchView('timeline'));
 
   // Timeline scroll observer
   window.addEventListener('scroll', onTimelineScroll, { passive: true });
