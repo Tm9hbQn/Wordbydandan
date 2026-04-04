@@ -972,38 +972,59 @@ body {
 /* ===== Timeline View ===== */
 .timeline-wrapper {
   position: relative;
-  min-height: 300px;
+  height: calc(100vh - 200px);
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
 }
 
 .timeline-age-overlay {
-  position: sticky;
+  position: absolute;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 5;
   display: flex;
   justify-content: center;
   pointer-events: none;
-  margin-bottom: 1rem;
+  padding-top: 0.5rem;
 }
 
 .timeline-age-text {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: var(--deep-purple);
   font-family: 'Secular One', sans-serif;
   font-size: clamp(1rem, 3.5vw, 1.4rem);
-  padding: 0.6rem 1.8rem;
+  padding: 0.5rem 1.6rem;
   border-radius: 50px;
   text-align: center;
   box-shadow: 0 4px 24px rgba(109, 92, 231, 0.12);
   border: 1px solid rgba(109, 92, 231, 0.08);
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
   white-space: nowrap;
 }
 
 .timeline-scroll {
   position: relative;
-  padding: 1rem 0 2rem;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
+  padding: 3rem 0 2rem;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 3rem, black calc(100% - 2rem), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 3rem, black calc(100% - 2rem), transparent 100%);
+}
+
+.timeline-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.timeline-scroll {
+  scrollbar-width: none;
 }
 
 .timeline-scroll::before {
@@ -1022,8 +1043,9 @@ body {
 .timeline-track {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   position: relative;
+  padding: 0.5rem 0;
 }
 
 .timeline-item {
@@ -1082,8 +1104,8 @@ body {
 
 .timeline-card {
   background: white;
-  border-radius: 18px;
-  padding: 1rem 1.2rem;
+  border-radius: 16px;
+  padding: 0.7rem 1rem;
   box-shadow: var(--card-shadow);
   cursor: pointer;
   transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);

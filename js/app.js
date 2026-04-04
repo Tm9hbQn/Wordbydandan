@@ -293,7 +293,11 @@ function setupEventListeners() {
   if (timelineViewBtn) timelineViewBtn.addEventListener('click', () => switchView('timeline'));
 
   // Timeline scroll observer
-  window.addEventListener('scroll', onTimelineScroll, { passive: true });
+  // Timeline scroll - listen on the scroll container
+  const timelineScroll = $('#timelineScroll');
+  if (timelineScroll) {
+    timelineScroll.addEventListener('scroll', onTimelineScroll, { passive: true });
+  }
 }
 
 /* ===== Input Handling ===== */
@@ -589,20 +593,45 @@ const revealObserver = new IntersectionObserver(
       }
     });
   },
-  { threshold: 0.05, rootMargin: '50px 0px 50px 0px' }
+  { threshold: 0.05, rootMargin: '100px 0px 100px 0px' }
 );
+
+let timelineRevealObserver = null;
+
+function getTimelineObserver() {
+  if (timelineRevealObserver) return timelineRevealObserver;
+  const scrollContainer = document.querySelector('#timelineScroll');
+  if (!scrollContainer) return revealObserver;
+  timelineRevealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          timelineRevealObserver.unobserve(entry.target);
+        }
+      });
+    },
+    { root: scrollContainer, threshold: 0.05, rootMargin: '100px 0px 100px 0px' }
+  );
+  return timelineRevealObserver;
+}
 
 function observeRevealElements() {
   const els = document.querySelectorAll('.reveal-on-scroll:not(.revealed)');
+  const tlObserver = getTimelineObserver();
   els.forEach((el) => {
-    revealObserver.observe(el);
+    if (el.closest('#timelineTrack')) {
+      tlObserver.observe(el);
+    } else {
+      revealObserver.observe(el);
+    }
   });
-  // Safety: reveal any items the observer missed after 2s
+  // Safety: reveal any items the observer missed after 1.5s
   setTimeout(() => {
     document.querySelectorAll('.reveal-on-scroll:not(.revealed)').forEach((el) => {
       el.classList.add('revealed');
     });
-  }, 2000);
+  }, 1500);
 }
 
 /* ===== Edit Modal ===== */
@@ -747,14 +776,16 @@ function updateTimelineOverlay() {
     return;
   }
 
-  const viewportCenter = window.innerHeight / 2;
+  const scrollContainer = document.querySelector('#timelineScroll');
+  const containerRect = scrollContainer.getBoundingClientRect();
+  const centerY = containerRect.top + containerRect.height / 2;
   let closest = items[0];
   let closestDist = Infinity;
 
   items.forEach((item) => {
     const rect = item.getBoundingClientRect();
     const itemCenter = rect.top + rect.height / 2;
-    const dist = Math.abs(itemCenter - viewportCenter);
+    const dist = Math.abs(itemCenter - centerY);
     if (dist < closestDist) {
       closestDist = dist;
       closest = item;
