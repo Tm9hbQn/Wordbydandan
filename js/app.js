@@ -770,6 +770,9 @@ function renderWords() {
 
   // Observe all new cards for scroll-reveal
   requestAnimationFrame(() => observeRevealElements());
+
+  // Render trends chart
+  renderTrends();
 }
 
 /* ===== Animated Counter ===== */
@@ -1340,6 +1343,304 @@ function updateTimelineOverlay() {
   const dateStr = formatTimelineDate(months);
   timelineAgeText.textContent = `${hebrewAge} - ${dateStr}`;
 }
+
+/* ===== Trends Chart ===== */
+function renderTrends() {
+  const trendsSection = document.getElementById('trendsSection');
+  const svg = document.getElementById('trendsSvg');
+  const tooltip = document.getElementById('trendsTooltip');
+  const statCard = document.getElementById('trendsStatCard');
+  const statText = document.getElementById('trendsStatText');
+
+  if (!svg || !trendsSection) return;
+
+  // Only show trends if we have words
+  if (words.length === 0) {
+    trendsSection.style.display = 'none';
+    return;
+  }
+  trendsSection.style.display = '';
+
+  // Count unique words (not linked_to variants) per month
+  const uniqueWords = words.filter(w => !w.linked_to);
+  if (uniqueWords.length === 0) {
+    trendsSection.style.display = 'none';
+    return;
+  }
+
+  // Group unique words by age_months
+  const wordsPerMonth = {};
+  uniqueWords.forEach(w => {
+    const m = w.age_months ?? 0;
+    wordsPerMonth[m] = (wordsPerMonth[m] || 0) + 1;
+  });
+
+  // Determine range: from min month to current baby age
+  const allMonths = Object.keys(wordsPerMonth).map(Number);
+  const minMonth = Math.min(...allMonths);
+  const now = new Date();
+  const currentAgeMonths = Math.max(
+    (now.getFullYear() - BABY_BIRTHDAY.getFullYear()) * 12 +
+    (now.getMonth() - BABY_BIRTHDAY.getMonth()),
+    Math.max(...allMonths)
+  );
+
+  // Build cumulative data points
+  const dataPoints = [];
+  let cumulative = 0;
+  for (let m = minMonth; m <= currentAgeMonths; m++) {
+    const newThisMonth = wordsPerMonth[m] || 0;
+    cumulative += newThisMonth;
+    dataPoints.push({ month: m, total: cumulative, newWords: newThisMonth });
+  }
+
+  if (dataPoints.length < 1) {
+    trendsSection.style.display = 'none';
+    return;
+  }
+
+  // Find best month (most new words)
+  let bestMonth = dataPoints[0];
+  dataPoints.forEach(dp => {
+    if (dp.newWords > bestMonth.newWords) bestMonth = dp;
+  });
+
+  // --- SVG Chart Drawing ---
+  const svgRect = svg.getBoundingClientRect();
+  const W = svgRect.width || 600;
+  const H = svgRect.height || 260;
+  const pad = { top: 25, right: 16, bottom: 44, left: 42 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+
+  const maxTotal = Math.max(...dataPoints.map(d => d.total), 1);
+  // Nice Y-axis ticks
+  const yStep = maxTotal <= 5 ? 1 : maxTotal <= 15 ? 2 : maxTotal <= 30 ? 5 : 10;
+  const yMax = Math.ceil(maxTotal / yStep) * yStep;
+
+  const xScale = (m) => pad.left + ((m - minMonth) / Math.max(currentAgeMonths - minMonth, 1)) * chartW;
+  const yScale = (v) => pad.top + chartH - (v / yMax) * chartH;
+
+  // Clear previous
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // Defs for gradient
+  const defs = document.createElementNS(ns, 'defs');
+  const grad = document.createElementNS(ns, 'linearGradient');
+  grad.id = 'trendsFill';
+  grad.setAttribute('x1', '0'); grad.setAttribute('y1', '0');
+  grad.setAttribute('x2', '0'); grad.setAttribute('y2', '1');
+  const stop1 = document.createElementNS(ns, 'stop');
+  stop1.setAttribute('offset', '0%');
+  stop1.setAttribute('stop-color', '#6C5CE7');
+  stop1.setAttribute('stop-opacity', '0.25');
+  const stop2 = document.createElementNS(ns, 'stop');
+  stop2.setAttribute('offset', '100%');
+  stop2.setAttribute('stop-color', '#6C5CE7');
+  stop2.setAttribute('stop-opacity', '0.02');
+  grad.appendChild(stop1);
+  grad.appendChild(stop2);
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+
+  // Y-axis grid lines & labels
+  for (let v = 0; v <= yMax; v += yStep) {
+    const y = yScale(v);
+    // Grid line
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', pad.left);
+    line.setAttribute('x2', W - pad.right);
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+    line.setAttribute('stroke', v === 0 ? 'rgba(108,92,231,0.15)' : 'rgba(108,92,231,0.06)');
+    line.setAttribute('stroke-width', v === 0 ? '1.5' : '1');
+    svg.appendChild(line);
+    // Label
+    const label = document.createElementNS(ns, 'text');
+    label.setAttribute('x', pad.left - 6);
+    label.setAttribute('y', y + 4);
+    label.setAttribute('text-anchor', 'end');
+    label.setAttribute('class', 'axis-label');
+    label.textContent = v;
+    svg.appendChild(label);
+  }
+
+  // X-axis labels (show select months to avoid overlap)
+  const totalMonths = currentAgeMonths - minMonth + 1;
+  const xLabelInterval = totalMonths <= 8 ? 1 : totalMonths <= 16 ? 2 : 3;
+  for (let m = minMonth; m <= currentAgeMonths; m += xLabelInterval) {
+    const x = xScale(m);
+    const label = document.createElementNS(ns, 'text');
+    label.setAttribute('x', x);
+    label.setAttribute('y', H - pad.bottom + 18);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('class', 'axis-label');
+    label.textContent = ageMonthsToHebrew(m);
+    // Truncate long labels for small screens
+    const shortLabel = m === 0 ? 'לידה' : m < 12 ? m + ' ח\'' : (Math.floor(m/12)) + ' ש\'' + (m%12 > 0 ? ' ' + (m%12) + 'ח\'' : '');
+    label.textContent = shortLabel;
+    svg.appendChild(label);
+
+    // Small tick
+    const tick = document.createElementNS(ns, 'line');
+    tick.setAttribute('x1', x);
+    tick.setAttribute('x2', x);
+    tick.setAttribute('y1', yScale(0));
+    tick.setAttribute('y2', yScale(0) + 5);
+    tick.setAttribute('stroke', 'rgba(108,92,231,0.15)');
+    tick.setAttribute('stroke-width', '1');
+    svg.appendChild(tick);
+  }
+
+  // Build line path and area path
+  let linePath = '';
+  let areaPath = '';
+  dataPoints.forEach((dp, i) => {
+    const x = xScale(dp.month);
+    const y = yScale(dp.total);
+    if (i === 0) {
+      linePath = `M${x},${y}`;
+      areaPath = `M${x},${yScale(0)} L${x},${y}`;
+    } else {
+      linePath += ` L${x},${y}`;
+      areaPath += ` L${x},${y}`;
+    }
+  });
+  // Close area
+  const lastX = xScale(dataPoints[dataPoints.length - 1].month);
+  const firstX = xScale(dataPoints[0].month);
+  areaPath += ` L${lastX},${yScale(0)} L${firstX},${yScale(0)} Z`;
+
+  // Area fill
+  const areaEl = document.createElementNS(ns, 'path');
+  areaEl.setAttribute('d', areaPath);
+  areaEl.setAttribute('fill', 'url(#trendsFill)');
+  areaEl.style.opacity = '0';
+  areaEl.style.transition = 'opacity 0.8s ease';
+  svg.appendChild(areaEl);
+  requestAnimationFrame(() => { areaEl.style.opacity = '1'; });
+
+  // Line stroke
+  const lineEl = document.createElementNS(ns, 'path');
+  lineEl.setAttribute('d', linePath);
+  lineEl.setAttribute('fill', 'none');
+  lineEl.setAttribute('stroke', '#6C5CE7');
+  lineEl.setAttribute('stroke-width', '2.5');
+  lineEl.setAttribute('stroke-linecap', 'round');
+  lineEl.setAttribute('stroke-linejoin', 'round');
+  // Animate line drawing
+  const lineLen = lineEl.getTotalLength ? 1500 : 0;
+  if (lineEl.getTotalLength) {
+    const len = lineEl.getTotalLength();
+    lineEl.setAttribute('stroke-dasharray', len);
+    lineEl.setAttribute('stroke-dashoffset', len);
+    lineEl.style.transition = 'stroke-dashoffset 1.2s ease-out';
+    svg.appendChild(lineEl);
+    requestAnimationFrame(() => { lineEl.setAttribute('stroke-dashoffset', '0'); });
+  } else {
+    svg.appendChild(lineEl);
+  }
+
+  // Data points (circles) - interactive
+  dataPoints.forEach((dp) => {
+    const cx = xScale(dp.month);
+    const cy = yScale(dp.total);
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', cx);
+    circle.setAttribute('cy', cy);
+    circle.setAttribute('r', dp.month === bestMonth.month ? '6' : '4');
+    circle.setAttribute('fill', dp.month === bestMonth.month ? '#FF6B9D' : '#6C5CE7');
+    circle.setAttribute('stroke', 'white');
+    circle.setAttribute('stroke-width', '2');
+    circle.style.cursor = 'pointer';
+    circle.style.transition = 'r 0.2s ease, fill 0.2s ease';
+
+    // Invisible larger hit area
+    const hitArea = document.createElementNS(ns, 'circle');
+    hitArea.setAttribute('cx', cx);
+    hitArea.setAttribute('cy', cy);
+    hitArea.setAttribute('r', '16');
+    hitArea.setAttribute('fill', 'transparent');
+    hitArea.style.cursor = 'pointer';
+
+    const showTip = (e) => {
+      const hebrewAge = ageMonthsToHebrew(dp.month);
+      const dateStr = formatTimelineDate(dp.month);
+      tooltip.innerHTML = `<strong>${hebrewAge}</strong> (${dateStr})<br>סה״כ: ${dp.total} מילים` +
+        (dp.newWords > 0 ? `<br>חדשות: +${dp.newWords}` : '');
+      tooltip.classList.remove('hidden');
+
+      // Position tooltip
+      const chartRect = svg.getBoundingClientRect();
+      const containerRect = svg.parentElement.getBoundingClientRect();
+      let tipX = cx - (tooltip.offsetWidth / 2);
+      let tipY = cy - tooltip.offsetHeight - 14;
+
+      // Clamp within container
+      const maxTipX = containerRect.width - tooltip.offsetWidth - 8;
+      tipX = Math.max(8, Math.min(tipX, maxTipX));
+      if (tipY < 0) tipY = cy + 20;
+
+      tooltip.style.left = tipX + 'px';
+      tooltip.style.top = tipY + 'px';
+
+      circle.setAttribute('r', dp.month === bestMonth.month ? '8' : '6');
+    };
+
+    const hideTip = () => {
+      tooltip.classList.add('hidden');
+      circle.setAttribute('r', dp.month === bestMonth.month ? '6' : '4');
+    };
+
+    hitArea.addEventListener('mouseenter', showTip);
+    hitArea.addEventListener('mouseleave', hideTip);
+    hitArea.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      showTip(e);
+      setTimeout(hideTip, 2500);
+    }, { passive: false });
+
+    svg.appendChild(circle);
+    svg.appendChild(hitArea);
+  });
+
+  // --- Stat Card ---
+  if (bestMonth.newWords > 0) {
+    statCard.style.display = '';
+    const monthDate = ageMonthsToDate(bestMonth.month);
+    const hebrewMonthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+    const monthName = hebrewMonthNames[monthDate.getMonth()];
+    const yearShort = String(monthDate.getFullYear()).slice(2);
+
+    statText.innerHTML =
+      `החודש בו ${BABY_NAME} למדה הכי הרבה מילים חדשות הוא ` +
+      `<span class="stat-highlight">${monthName} ${yearShort}'</span>` +
+      `, בו היא הגתה לראשונה לא פחות מ-` +
+      `<span class="stat-highlight">${bestMonth.newWords} מילים חדשות</span>`;
+
+    // Observe for reveal animation
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          statCard.classList.add('revealed');
+          observer.unobserve(statCard);
+        }
+      });
+    }, { threshold: 0.3 });
+    statCard.classList.remove('revealed');
+    observer.observe(statCard);
+  } else {
+    statCard.style.display = 'none';
+  }
+}
+
+// Re-render trends on window resize (debounced)
+let trendsResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(trendsResizeTimer);
+  trendsResizeTimer = setTimeout(renderTrends, 250);
+});
 
 /* ===== Export ===== */
 document.addEventListener('DOMContentLoaded', () => {

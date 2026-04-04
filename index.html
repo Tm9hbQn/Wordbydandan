@@ -106,6 +106,11 @@
 
   <!-- Words List Section -->
   <section class="words-section" id="wordsSection">
+    <!-- Top decorative divider -->
+    <div class="section-divider" aria-hidden="true">
+      <div class="divider-line"></div>
+      <div class="divider-glow"></div>
+    </div>
     <h2 class="words-title">המילים של דניאלה 💬</h2>
     <div class="words-counter">
       <span id="wordCount">0</span> מילים עד עכשיו
@@ -149,6 +154,23 @@
       <div class="empty-icon">🌱</div>
       <p>עוד לא הוספנו מילים...</p>
       <p class="empty-sub">המילה הראשונה מחכה למעלה ☝️</p>
+    </div>
+    <!-- Bottom decorative divider -->
+    <div class="section-divider" aria-hidden="true">
+      <div class="divider-line"></div>
+      <div class="divider-glow"></div>
+    </div>
+  </section>
+
+  <!-- Trends Section -->
+  <section class="trends-section" id="trendsSection">
+    <h2 class="trends-title">מגמות צמיחה</h2>
+    <div class="trends-chart-container" id="trendsChart">
+      <svg id="trendsSvg" class="trends-svg"></svg>
+      <div class="trends-tooltip hidden" id="trendsTooltip"></div>
+    </div>
+    <div class="trends-stat-card" id="trendsStatCard">
+      <p class="trends-stat-text" id="trendsStatText"></p>
     </div>
   </section>
 
