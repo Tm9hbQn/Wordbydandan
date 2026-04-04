@@ -996,11 +996,29 @@ function updateLinkUI() {
 }
 
 function closeEditModal() {
+  // Remember which word was being viewed so we can scroll to it
+  const lastViewedId = editingWordId;
   editModal.classList.add('hidden');
   document.body.style.overflow = '';
   editingWordId = null;
   editingLinkedTo = null;
   viewingWord = null;
+
+  // Scroll timeline to the last viewed word (may differ from the original if user navigated via evolution chain)
+  if (lastViewedId && currentView === 'timeline') {
+    requestAnimationFrame(() => {
+      let el = timelineTrack.querySelector(`[data-word-id="${lastViewedId}"]`);
+      if (!el) {
+        // Word not currently loaded - load all and find it
+        timelineDisplayCount = Infinity;
+        renderTimeline();
+        el = timelineTrack.querySelector(`[data-word-id="${lastViewedId}"]`);
+      }
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
 }
 
 async function handleEditSave() {
@@ -1367,10 +1385,15 @@ function renderTimeline() {
           // Scroll to the nearest neighbor in the timeline
           const neighbors = wordNeighbors.get(w.id) || [];
           for (const nId of neighbors) {
-            const neighborEl = timelineTrack.querySelector(`[data-word-id="${nId}"]`);
+            let neighborEl = timelineTrack.querySelector(`[data-word-id="${nId}"]`);
+            if (!neighborEl) {
+              // Word not loaded yet - load all words and retry
+              timelineDisplayCount = Infinity;
+              renderTimeline();
+              neighborEl = timelineTrack.querySelector(`[data-word-id="${nId}"]`);
+            }
             if (neighborEl) {
               neighborEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              // Briefly highlight the neighbor
               neighborEl.classList.add('timeline-item-highlight');
               setTimeout(() => neighborEl.classList.remove('timeline-item-highlight'), 1500);
               break;
