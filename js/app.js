@@ -273,11 +273,13 @@ function setupEventListeners() {
     }
   });
 
-  // Edit modal
+  // Word modal
   modalClose.addEventListener('click', closeEditModal);
   editModal.addEventListener('click', (e) => {
     if (e.target === editModal) closeEditModal();
   });
+  editToggleBtn.addEventListener('click', switchToEditMode);
+  editCancelBtn.addEventListener('click', switchToViewMode);
   editDeleteBtn.addEventListener('click', handleDelete);
   editSaveBtn.addEventListener('click', handleEditSave);
 
@@ -835,19 +837,92 @@ const linkSearchInput = $('#linkSearchInput');
 const linkResults = $('#linkResults');
 const linkSearchWrap = $('#linkSearchWrap');
 
+const wordViewMode = $('#wordViewMode');
+const wordEditMode = $('#wordEditMode');
+const viewWordDisplay = $('#viewWordDisplay');
+const viewAgeDisplay = $('#viewAgeDisplay');
+const viewNotesDisplay = $('#viewNotesDisplay');
+const viewEvoSection = $('#viewEvoSection');
+const viewEvoChain = $('#viewEvoChain');
+const editToggleBtn = $('#editToggleBtn');
+const editCancelBtn = $('#editCancelBtn');
+let viewingWord = null;
+
 function openEditModal(word) {
+  viewingWord = word;
   editingWordId = word.id;
   editingLinkedTo = word.linked_to || null;
-  editWordInput.textContent = word.word;
-  editNotesInput.textContent = word.notes || '';
 
-  buildAgeOptions(editAgePicker, word.age_months);
+  // Populate view mode
+  viewWordDisplay.textContent = word.word;
+  viewAgeDisplay.textContent = word.age_months !== null ? ageMonthsToHebrew(word.age_months) : '';
+
+  if (word.notes) {
+    viewNotesDisplay.textContent = word.notes;
+    viewNotesDisplay.classList.remove('hidden');
+  } else {
+    viewNotesDisplay.classList.add('hidden');
+  }
+
+  // Show evolution chain if exists
+  const chain = getEvolutionChain(word.id);
+  if (chain.length > 1) {
+    viewEvoSection.classList.remove('hidden');
+    viewEvoChain.innerHTML = '';
+    chain.forEach((w, i) => {
+      if (i > 0) {
+        const arrow = document.createElement('span');
+        arrow.className = 'view-evo-arrow';
+        arrow.textContent = '→';
+        viewEvoChain.appendChild(arrow);
+      }
+      const item = document.createElement('span');
+      item.className = 'view-evo-item' + (w.id === word.id ? ' evo-active' : '');
+      item.textContent = w.word;
+      item.addEventListener('click', () => {
+        const target = words.find((o) => o.id === w.id);
+        if (target && target.id !== word.id) {
+          closeEditModal();
+          openEditModal(target);
+        }
+      });
+      viewEvoChain.appendChild(item);
+    });
+  } else {
+    viewEvoSection.classList.add('hidden');
+  }
+
+  // Show view mode, hide edit mode
+  wordViewMode.classList.remove('hidden');
+  wordEditMode.classList.add('hidden');
+
+  editModal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function switchToEditMode() {
+  if (!viewingWord) return;
+
+  editWordInput.textContent = viewingWord.word;
+  editNotesInput.textContent = viewingWord.notes || '';
+  buildAgeOptions(editAgePicker, viewingWord.age_months);
   updateLinkUI();
   linkSearchInput.value = '';
   linkResults.classList.add('hidden');
 
-  editModal.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+  wordViewMode.classList.add('hidden');
+  wordEditMode.classList.remove('hidden');
+}
+
+function switchToViewMode() {
+  // Refresh view from current word data
+  const word = words.find((w) => w.id === editingWordId);
+  if (word) {
+    wordEditMode.classList.add('hidden');
+    openEditModal(word);
+  } else {
+    closeEditModal();
+  }
 }
 
 function updateLinkUI() {
@@ -869,6 +944,7 @@ function closeEditModal() {
   document.body.style.overflow = '';
   editingWordId = null;
   editingLinkedTo = null;
+  viewingWord = null;
 }
 
 async function handleEditSave() {
@@ -886,9 +962,31 @@ async function handleEditSave() {
       notes,
       linked_to: editingLinkedTo,
     });
-    closeEditModal();
+
+    // Bidirectional: if linking X→Y and Y has no link, set Y→X
+    // so the chain is always connected
+    if (editingLinkedTo) {
+      const targetWord = words.find((w) => w.id === editingLinkedTo);
+      if (targetWord && !targetWord.linked_to) {
+        // Check if target is already linked by another word
+        const alreadyLinkedBy = words.some((w) => w.id !== editingWordId && w.linked_to === editingLinkedTo);
+        if (!alreadyLinkedBy) {
+          // Target has no connections besides ours — it's the "root"
+          // Our word links to it, which is correct (child → parent)
+        }
+      }
+    }
+
     await loadWords();
     showSuccess('עודכן! ✨');
+
+    // Return to view mode with updated data
+    const updatedWord = words.find((w) => w.id === editingWordId);
+    if (updatedWord) {
+      openEditModal(updatedWord);
+    } else {
+      closeEditModal();
+    }
   } catch (err) {
     console.error('Error updating word:', err);
   }

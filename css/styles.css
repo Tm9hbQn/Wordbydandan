@@ -1014,6 +1014,118 @@ body {
   transition: all 0.3s;
 }
 
+/* ===== Word View Mode ===== */
+.view-word-display {
+  font-family: 'Karantina', sans-serif;
+  font-size: 3rem;
+  font-weight: 400;
+  color: var(--deep-purple);
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 0.3rem;
+}
+
+.view-age-display {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--soft-purple);
+  margin-bottom: 1rem;
+}
+
+.view-age-display::before {
+  content: '🕐 ';
+}
+
+.view-notes-display {
+  background: var(--lavender);
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.95rem;
+  color: var(--deep-purple);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  text-align: right;
+}
+
+.view-notes-display::before {
+  content: '📝 ';
+}
+
+.view-evo-section {
+  margin-bottom: 1rem;
+}
+
+.view-evo-label {
+  font-family: 'Secular One', sans-serif;
+  font-size: 0.95rem;
+  color: var(--deep-purple);
+  margin-bottom: 0.6rem;
+}
+
+.view-evo-chain {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.view-evo-item {
+  background: var(--lavender);
+  border-radius: 12px;
+  padding: 0.4rem 0.8rem;
+  font-family: 'Karantina', sans-serif;
+  font-size: 1.3rem;
+  color: var(--deep-purple);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-evo-item:hover {
+  background: var(--pink);
+  transform: scale(1.05);
+}
+
+.view-evo-item.evo-active {
+  background: linear-gradient(135deg, var(--hot-pink), var(--soft-purple));
+  color: white;
+}
+
+.view-evo-arrow {
+  color: var(--soft-purple);
+  font-size: 0.9rem;
+}
+
+.modal-edit-btn {
+  background: linear-gradient(135deg, var(--soft-purple), var(--hot-pink));
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 0.7rem 1.5rem;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+  transition: all 0.3s;
+}
+
+.modal-edit-btn:active {
+  transform: scale(0.95);
+}
+
+.modal-cancel-btn {
+  background: var(--lavender);
+  color: var(--soft-purple);
+  border: none;
+  border-radius: 50px;
+  padding: 0.7rem 1.5rem;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
 /* ===== Word Link UI ===== */
 .link-section {
   position: relative;

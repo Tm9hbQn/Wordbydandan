@@ -152,45 +152,64 @@
     </div>
   </section>
 
-  <!-- Edit Modal -->
+  <!-- Word Modal (View + Edit) -->
   <div class="modal-overlay hidden" id="editModal">
     <div class="modal-content">
       <button class="modal-close" id="modalClose" aria-label="סגירה">✕</button>
-      <h3 class="modal-title">עריכת מילה</h3>
-      <div class="modal-field">
-        <label>מילה</label>
-        <div class="modal-input" id="editWordInput" contenteditable="true" role="textbox"></div>
-      </div>
-      <div class="modal-field">
-        <label>גיל</label>
-        <div class="modal-age-picker" id="editAgePicker"></div>
-      </div>
-      <div class="modal-field">
-        <label>הערות</label>
-        <div class="modal-input modal-notes" id="editNotesInput" contenteditable="true" role="textbox" data-placeholder="הוסיפו הקשר..."></div>
-      </div>
-      <div class="modal-field">
-        <label>התפתחות מילה 🔗</label>
-        <div class="link-section" id="linkSection">
-          <div class="link-current hidden" id="linkCurrent">
-            <span class="link-badge" id="linkBadge"></span>
-            <button class="link-remove-btn" id="linkRemoveBtn" aria-label="הסירו קישור">✕</button>
-          </div>
-          <div class="link-search-wrap" id="linkSearchWrap">
-            <input
-              class="link-search-input"
-              id="linkSearchInput"
-              type="text"
-              placeholder="חפשו מילה לקשר..."
-              autocomplete="off"
-            >
-            <div class="link-results hidden" id="linkResults"></div>
-          </div>
+
+      <!-- View Mode -->
+      <div id="wordViewMode">
+        <div class="view-word-display" id="viewWordDisplay"></div>
+        <div class="view-age-display" id="viewAgeDisplay"></div>
+        <div class="view-notes-display hidden" id="viewNotesDisplay"></div>
+        <div class="view-evo-section hidden" id="viewEvoSection">
+          <div class="view-evo-label">התפתחות מילה 🔗</div>
+          <div class="view-evo-chain" id="viewEvoChain"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-delete-btn" id="editDeleteBtn">מחקו 🗑️</button>
+          <button class="modal-edit-btn" id="editToggleBtn">ערכו ✏️</button>
         </div>
       </div>
-      <div class="modal-actions">
-        <button class="modal-delete-btn" id="editDeleteBtn">מחקו 🗑️</button>
-        <button class="modal-save-btn" id="editSaveBtn">שמרו 💕</button>
+
+      <!-- Edit Mode -->
+      <div id="wordEditMode" class="hidden">
+        <h3 class="modal-title">עריכת מילה</h3>
+        <div class="modal-field">
+          <label>מילה</label>
+          <div class="modal-input" id="editWordInput" contenteditable="true" role="textbox"></div>
+        </div>
+        <div class="modal-field">
+          <label>גיל</label>
+          <div class="modal-age-picker" id="editAgePicker"></div>
+        </div>
+        <div class="modal-field">
+          <label>הערות</label>
+          <div class="modal-input modal-notes" id="editNotesInput" contenteditable="true" role="textbox" data-placeholder="הוסיפו הקשר..."></div>
+        </div>
+        <div class="modal-field">
+          <label>התפתחות מילה 🔗</label>
+          <div class="link-section" id="linkSection">
+            <div class="link-current hidden" id="linkCurrent">
+              <span class="link-badge" id="linkBadge"></span>
+              <button class="link-remove-btn" id="linkRemoveBtn" aria-label="הסירו קישור">✕</button>
+            </div>
+            <div class="link-search-wrap" id="linkSearchWrap">
+              <input
+                class="link-search-input"
+                id="linkSearchInput"
+                type="text"
+                placeholder="חפשו מילה לקשר..."
+                autocomplete="off"
+              >
+              <div class="link-results hidden" id="linkResults"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-cancel-btn" id="editCancelBtn">ביטול</button>
+          <button class="modal-save-btn" id="editSaveBtn">שמרו 💕</button>
+        </div>
       </div>
     </div>
   </div>
