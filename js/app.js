@@ -7,30 +7,18 @@ const BABY_NAME = 'דניאלה';
 
 /* ===== Supabase Client ===== */
 let supabase = null;
-let useLocalStorage = false;
 
 function initSupabase() {
   try {
     if (!window.supabase) {
-      console.warn('Supabase SDK not loaded yet, using localStorage');
-      useLocalStorage = true;
+      console.error('Supabase SDK failed to load');
       return;
     }
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    useLocalStorage = false;
     console.log('Supabase connected');
   } catch (e) {
     console.error('Supabase init failed:', e);
-    useLocalStorage = true;
-  }
-}
-
-// Called when Supabase SDK finishes loading asynchronously
-function initSupabaseAndReload() {
-  if (supabase) return; // already initialized
-  initSupabase();
-  if (!useLocalStorage) {
-    loadWords(); // reload from Supabase
+    supabase = null;
   }
 }
 
@@ -51,7 +39,7 @@ function saveLocalWords(words) {
 
 /* ===== Database Operations ===== */
 async function fetchWords() {
-  if (useLocalStorage) {
+  if (!supabase) {
     return getLocalWords().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
   try {
@@ -61,9 +49,10 @@ async function fetchWords() {
       .order('created_at', { ascending: false });
     if (error) {
       console.error('Supabase fetch error:', error.message);
-      // Fallback to localStorage if Supabase fails
       return getLocalWords().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
+    // Sync remote data to localStorage as backup
+    if (data) saveLocalWords(data);
     return data || [];
   } catch (e) {
     console.error('Fetch words failed:', e);
@@ -85,7 +74,7 @@ async function insertWord(word) {
     return newWord;
   };
 
-  if (useLocalStorage) return localFallback();
+  if (!supabase) return localFallback();
 
   try {
     const { data, error } = await supabase.from('words').insert(word).select().single();
@@ -101,7 +90,7 @@ async function insertWord(word) {
 }
 
 async function updateWord(id, updates) {
-  if (useLocalStorage) {
+  if (!supabase) {
     const words = getLocalWords();
     const idx = words.findIndex((w) => w.id === id);
     if (idx >= 0) {
@@ -111,24 +100,43 @@ async function updateWord(id, updates) {
     }
     return null;
   }
-  const { data, error } = await supabase
-    .from('words')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('words')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    console.error('Update word failed:', e);
+    // Fallback to localStorage
+    const words = getLocalWords();
+    const idx = words.findIndex((w) => w.id === id);
+    if (idx >= 0) {
+      words[idx] = { ...words[idx], ...updates, updated_at: new Date().toISOString() };
+      saveLocalWords(words);
+      return words[idx];
+    }
+    throw e;
+  }
 }
 
 async function deleteWord(id) {
-  if (useLocalStorage) {
+  if (!supabase) {
     const words = getLocalWords().filter((w) => w.id !== id);
     saveLocalWords(words);
     return;
   }
-  const { error } = await supabase.from('words').delete().eq('id', id);
-  if (error) throw error;
+  try {
+    const { error } = await supabase.from('words').delete().eq('id', id);
+    if (error) throw error;
+  } catch (e) {
+    console.error('Delete word failed:', e);
+    const words = getLocalWords().filter((w) => w.id !== id);
+    saveLocalWords(words);
+  }
 }
 
 /* ===== Age Helpers ===== */

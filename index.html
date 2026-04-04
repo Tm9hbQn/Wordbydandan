@@ -233,15 +233,7 @@
     <button id="exportBtn" style="margin-top:0.8rem;background:#F3E5F5;color:#2D1B69;border:none;border-radius:50px;padding:0.5rem 1.5rem;font-family:'Varela Round',sans-serif;font-size:0.85rem;cursor:pointer;">ייצוא מילים 📋</button>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/app.js"></script>
-  <script>
-    // Load Supabase SDK and initialize when ready
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-    s.onload = function() {
-      if (typeof initSupabaseAndReload === 'function') initSupabaseAndReload();
-    };
-    document.head.appendChild(s);
-  </script>
 </body>
 </html>
