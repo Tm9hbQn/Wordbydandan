@@ -6,7 +6,8 @@ const BABY_BIRTHDAY = new Date(2024, 11, 5); // December 5, 2024
 const BABY_NAME = 'דניאלה';
 
 /* ===== Supabase Client ===== */
-let supabase = null;
+// NOTE: Cannot use "supabase" as variable name - conflicts with SDK's global var supabase
+let db = null;
 
 function initSupabase() {
   try {
@@ -14,11 +15,11 @@ function initSupabase() {
       console.error('Supabase SDK failed to load');
       return;
     }
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log('Supabase connected');
   } catch (e) {
     console.error('Supabase init failed:', e);
-    supabase = null;
+    db = null;
   }
 }
 
@@ -39,11 +40,11 @@ function saveLocalWords(words) {
 
 /* ===== Database Operations ===== */
 async function fetchWords() {
-  if (!supabase) {
+  if (!db) {
     return getLocalWords().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('words')
       .select('*')
       .order('created_at', { ascending: false });
@@ -74,10 +75,10 @@ async function insertWord(word) {
     return newWord;
   };
 
-  if (!supabase) return localFallback();
+  if (!db) return localFallback();
 
   try {
-    const { data, error } = await supabase.from('words').insert(word).select().single();
+    const { data, error } = await db.from('words').insert(word).select().single();
     if (error) {
       console.error('Supabase insert error:', error.message);
       return localFallback();
@@ -90,7 +91,7 @@ async function insertWord(word) {
 }
 
 async function updateWord(id, updates) {
-  if (!supabase) {
+  if (!db) {
     const words = getLocalWords();
     const idx = words.findIndex((w) => w.id === id);
     if (idx >= 0) {
@@ -101,7 +102,7 @@ async function updateWord(id, updates) {
     return null;
   }
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('words')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -124,13 +125,13 @@ async function updateWord(id, updates) {
 }
 
 async function deleteWord(id) {
-  if (!supabase) {
+  if (!db) {
     const words = getLocalWords().filter((w) => w.id !== id);
     saveLocalWords(words);
     return;
   }
   try {
-    const { error } = await supabase.from('words').delete().eq('id', id);
+    const { error } = await db.from('words').delete().eq('id', id);
     if (error) throw error;
   } catch (e) {
     console.error('Delete word failed:', e);
@@ -240,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadWords();
 
   // Debug: show connection status in console
-  console.log('[WordByDandan] supabase client:', supabase ? 'connected' : 'MISSING');
+  console.log('[WordByDandan] supabase client:', db ? 'connected' : 'MISSING');
   console.log('[WordByDandan] words loaded:', words.length);
   console.log('[WordByDandan] window.supabase SDK:', typeof window.supabase);
 });
