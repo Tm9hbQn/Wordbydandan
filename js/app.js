@@ -11,12 +11,15 @@ let useLocalStorage = false;
 
 function initSupabase() {
   try {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !window.supabase) {
+    if (!window.supabase) {
+      console.warn('Supabase SDK not loaded, using localStorage');
       useLocalStorage = true;
       return;
     }
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase connected');
   } catch (e) {
+    console.error('Supabase init failed:', e);
     useLocalStorage = true;
   }
 }
@@ -41,16 +44,25 @@ async function fetchWords() {
   if (useLocalStorage) {
     return getLocalWords().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
-  const { data, error } = await supabase
-    .from('words')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase
+      .from('words')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Supabase fetch error:', error.message);
+      // Fallback to localStorage if Supabase fails
+      return getLocalWords().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    return data || [];
+  } catch (e) {
+    console.error('Fetch words failed:', e);
+    return getLocalWords().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
 }
 
 async function insertWord(word) {
-  if (useLocalStorage) {
+  const localFallback = () => {
     const words = getLocalWords();
     const newWord = {
       id: crypto.randomUUID(),
@@ -61,10 +73,21 @@ async function insertWord(word) {
     words.push(newWord);
     saveLocalWords(words);
     return newWord;
+  };
+
+  if (useLocalStorage) return localFallback();
+
+  try {
+    const { data, error } = await supabase.from('words').insert(word).select().single();
+    if (error) {
+      console.error('Supabase insert error:', error.message);
+      return localFallback();
+    }
+    return data;
+  } catch (e) {
+    console.error('Insert word failed:', e);
+    return localFallback();
   }
-  const { data, error } = await supabase.from('words').insert(word).select().single();
-  if (error) throw error;
-  return data;
 }
 
 async function updateWord(id, updates) {
