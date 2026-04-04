@@ -1337,7 +1337,7 @@ function renderTimeline() {
       if (tlChain.length > 1) {
         const linkEl = document.createElement('div');
         linkEl.className = 'timeline-card-link';
-        linkEl.textContent = tlChain.map((c) => c.word).join(' → ');
+        linkEl.textContent = tlChain.map((c) => c.word).join(' ← ');
         linkEl.addEventListener('click', (e) => {
           e.stopPropagation();
           // Scroll to the nearest neighbor in the timeline
@@ -1370,7 +1370,11 @@ function renderTimeline() {
         evo.className = 'timeline-evolution';
         const evoLine = document.createElement('div');
         evoLine.className = 'timeline-evo-line';
+        const evoArrow = document.createElement('div');
+        evoArrow.className = 'timeline-evo-arrow';
+        evoArrow.textContent = '▼';
         evo.appendChild(evoLine);
+        evo.appendChild(evoArrow);
         timelineTrack.appendChild(evo);
       }
     }
@@ -1687,10 +1691,12 @@ function renderTrends() {
     const yearShort = String(monthDate.getFullYear()).slice(2);
 
     statText.innerHTML =
+      `<i data-lucide="trending-up" class="stat-icon"></i> ` +
       `החודש בו ${BABY_NAME} למדה הכי הרבה מילים חדשות הוא ` +
       `<span class="stat-highlight">${monthName} ${yearShort}'</span>` +
       `, בו היא הגתה לראשונה לא פחות מ-` +
       `<span class="stat-highlight">${bestMonth.newWords} מילים חדשות</span>`;
+    if (window.lucide) lucide.createIcons();
 
     // Observe for reveal animation
     const observer = new IntersectionObserver((entries) => {
