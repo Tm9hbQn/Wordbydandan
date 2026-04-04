@@ -697,7 +697,9 @@ function renderWords() {
   }
 
   emptyState.classList.add('hidden');
-  animateCount(wordCount, words.length);
+  // Count unique words: words that have linked_to are earlier pronunciations, not new words
+  const uniqueCount = words.filter((w) => !w.linked_to).length;
+  animateCount(wordCount, uniqueCount);
 
   if (filtered.length === 0 && searchQuery) {
     wordsGrid.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--soft-purple);font-family:Varela Round,sans-serif;">לא נמצאו תוצאות 🤷</div>';
