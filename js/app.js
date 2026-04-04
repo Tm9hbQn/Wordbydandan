@@ -245,6 +245,11 @@ function setupEventListeners() {
   addBtn.addEventListener('click', () => submitWord());
 
   // Age picker
+  const ageConfirmBtn = $('#ageConfirmBtn');
+  ageConfirmBtn.addEventListener('click', () => {
+    const months = getWheelCenterMonth(ageOptions);
+    selectAge(months);
+  });
   justNowBtn.addEventListener('click', () => selectAge(calculateCurrentAgeMonths()));
 
   // Notes
@@ -431,7 +436,8 @@ function buildAgeOptions(container, selectedMonths) {
     btn.dataset.months = m;
     btn.addEventListener('click', () => {
       if (isWheel) {
-        selectAge(m);
+        // Scroll this item to center (user confirms with the button)
+        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         container.querySelectorAll('.age-option').forEach((o) => o.classList.remove('selected'));
         btn.classList.add('selected');
@@ -444,6 +450,26 @@ function buildAgeOptions(container, selectedMonths) {
   if (isWheel) {
     setupAgeWheel(container);
   }
+}
+
+function getWheelCenterMonth(wheel) {
+  const items = wheel.querySelectorAll('.age-option');
+  const wheelRect = wheel.getBoundingClientRect();
+  const centerY = wheelRect.top + wheelRect.height / 2;
+  let closest = null;
+  let closestDist = Infinity;
+
+  items.forEach((item) => {
+    const itemRect = item.getBoundingClientRect();
+    const itemCenter = itemRect.top + itemRect.height / 2;
+    const dist = Math.abs(itemCenter - centerY);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closest = item;
+    }
+  });
+
+  return closest ? parseInt(closest.dataset.months) : 0;
 }
 
 function setupAgeWheel(wheel) {
