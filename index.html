@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Varela+Round&family=Karantina:wght@300;400;700&family=Suez+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=2">
+  <link rel="stylesheet" href="css/styles.css?v=3">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
 </head>
 <body>
@@ -104,13 +104,6 @@
     <span class="success-text" id="successText"></span>
   </div>
 
-  <!-- Sticky Section Nav -->
-  <nav class="section-nav" id="sectionNav">
-    <button class="section-nav-btn active" id="navWords" data-target="wordsSection">אוצר מילים</button>
-    <button class="section-nav-btn" id="navTrends" data-target="trendsSection">מגמות</button>
-    <button class="section-nav-btn section-nav-add" id="navAddWord">+ הוסיפו מילה</button>
-  </nav>
-
   <!-- Words List Section -->
   <section class="words-section" id="wordsSection">
     <!-- Top decorative divider -->
@@ -122,14 +115,23 @@
     <div class="words-counter">
       <span id="wordCount">0</span> מילים עד עכשיו
     </div>
-    <div class="view-toggle">
-      <button class="view-toggle-btn" id="gridViewBtn" aria-label="תצוגת רשת">
-        <span>▦</span> רשת
-      </button>
-      <button class="view-toggle-btn active" id="timelineViewBtn" aria-label="תצוגת ציר זמן">
-        <span>━</span> ציר זמן
-      </button>
-    </div>
+
+    <!-- Sticky Section Nav (replaces old view-toggle position) -->
+    <nav class="section-nav" id="sectionNav">
+      <div class="section-nav-row">
+        <button class="section-nav-btn active" id="navWords" data-target="wordsSection">אוצר מילים</button>
+        <button class="section-nav-btn" id="navTrends" data-target="trendsSection">מגמות</button>
+        <button class="section-nav-btn section-nav-add" id="navAddWord">+ הוסיפו מילה</button>
+      </div>
+      <div class="view-toggle">
+        <button class="view-toggle-btn" id="gridViewBtn" aria-label="תצוגת רשת">
+          <span>▦</span> רשת
+        </button>
+        <button class="view-toggle-btn active" id="timelineViewBtn" aria-label="תצוגת ציר זמן">
+          <span>━</span> ציר זמן
+        </button>
+      </div>
+    </nav>
     <div class="search-container" id="searchSection">
       <span class="search-icon">🔍</span>
       <input

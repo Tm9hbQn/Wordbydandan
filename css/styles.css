@@ -1544,6 +1544,10 @@ body {
   display: flex;
   justify-content: center;
   gap: 0.5rem;
+  margin-bottom: 0;
+}
+
+.words-section > .view-toggle {
   margin-bottom: 1.5rem;
 }
 
@@ -1973,21 +1977,32 @@ body {
   top: 0;
   z-index: 50;
   display: flex;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.7rem 1rem;
-  background: rgba(255, 249, 251, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  margin: 0 -1.2rem;
+  background: rgba(255, 249, 251, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(109, 92, 231, 0.08);
-  max-width: 700px;
-  margin: 0 auto;
+  box-shadow: 0 2px 12px rgba(109, 92, 231, 0.06);
+}
+
+.section-nav-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-nav .view-toggle {
+  margin-bottom: 0;
 }
 
 .section-nav-btn {
   font-family: 'Secular One', sans-serif;
-  font-size: 0.9rem;
-  padding: 0.45rem 1.1rem;
+  font-size: 1rem;
+  padding: 0.55rem 1.4rem;
   border: 2px solid transparent;
   border-radius: 50px;
   background: var(--lavender);
@@ -2009,12 +2024,11 @@ body {
 }
 
 .section-nav-add {
-  margin-right: auto;
   background: transparent;
   color: var(--hot-pink);
   border: 2px solid var(--hot-pink);
-  font-size: 0.8rem;
-  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
 }
 
 .section-nav-add:hover {
