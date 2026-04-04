@@ -372,11 +372,20 @@ function resetInput() {
 
 function showSuccess(text) {
   successText.textContent = text;
+  successOverlay.classList.add('hidden');
+  successOverlay.classList.remove('toast-hiding');
+  // Force reflow to restart animation
+  void successOverlay.offsetWidth;
   successOverlay.classList.remove('hidden');
 
-  setTimeout(() => {
-    successOverlay.classList.add('hidden');
-  }, 1500);
+  clearTimeout(showSuccess._timer);
+  showSuccess._timer = setTimeout(() => {
+    successOverlay.classList.add('toast-hiding');
+    setTimeout(() => {
+      successOverlay.classList.add('hidden');
+      successOverlay.classList.remove('toast-hiding');
+    }, 300);
+  }, 2000);
 }
 
 /* ===== Age Options Builder ===== */
@@ -422,12 +431,12 @@ function renderWords() {
   }
 
   emptyState.classList.add('hidden');
-  wordCount.textContent = words.length;
+  animateCount(wordCount, words.length);
 
   words.forEach((w, i) => {
     const card = document.createElement('div');
-    card.className = 'word-card';
-    card.style.animationDelay = `${i * 0.05}s`;
+    card.className = 'word-card reveal-on-scroll';
+    card.style.setProperty('--reveal-delay', `${i * 0.06}s`);
     card.addEventListener('click', () => openEditModal(w));
 
     const wordEl = document.createElement('div');
@@ -454,6 +463,45 @@ function renderWords() {
   if (currentView === 'timeline') {
     renderTimeline();
   }
+
+  // Observe all new cards for scroll-reveal
+  requestAnimationFrame(() => observeRevealElements());
+}
+
+/* ===== Animated Counter ===== */
+function animateCount(el, target) {
+  const current = parseInt(el.textContent) || 0;
+  if (current === target) return;
+  el.classList.add('count-bump');
+  setTimeout(() => el.classList.remove('count-bump'), 300);
+  const duration = 400;
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+    el.textContent = Math.round(current + (target - current) * eased);
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ===== Scroll Reveal Observer ===== */
+const revealObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('revealed');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+);
+
+function observeRevealElements() {
+  document.querySelectorAll('.reveal-on-scroll:not(.revealed)').forEach((el) => {
+    revealObserver.observe(el);
+  });
 }
 
 /* ===== Edit Modal ===== */
@@ -538,15 +586,15 @@ function formatTimelineDate(months) {
 function renderTimeline() {
   timelineTrack.innerHTML = '';
 
-  // Sort by age ascending (chronological)
-  const sorted = [...words].sort((a, b) => (a.age_months ?? 0) - (b.age_months ?? 0));
+  // Sort by age descending (newest first, going backwards)
+  const sorted = [...words].sort((a, b) => (b.age_months ?? 0) - (a.age_months ?? 0));
 
   if (sorted.length === 0) return;
 
   sorted.forEach((w, i) => {
     const item = document.createElement('div');
-    item.className = 'timeline-item';
-    item.style.animationDelay = `${i * 0.05}s`;
+    item.className = 'timeline-item reveal-on-scroll';
+    item.style.setProperty('--reveal-delay', `${i * 0.08}s`);
     item.dataset.ageMonths = w.age_months ?? 0;
 
     const dot = document.createElement('div');
@@ -581,6 +629,9 @@ function renderTimeline() {
 
   // Initial overlay update
   updateTimelineOverlay();
+
+  // Observe timeline items for scroll-reveal
+  requestAnimationFrame(() => observeRevealElements());
 }
 
 function onTimelineScroll() {
