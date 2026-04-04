@@ -765,7 +765,7 @@ function renderWords() {
       if (chain.length > 1) {
         const linkEl = document.createElement('div');
         linkEl.className = 'word-card-link';
-        linkEl.textContent = chain.map((c) => c.word).join(' → ');
+        linkEl.textContent = chain.map((c) => c.word).join(' ← ');
         linkEl.addEventListener('click', (e) => {
           e.stopPropagation();
           openEvoModal(w.id);
@@ -936,7 +936,7 @@ function openEditModal(word) {
       if (i < chain.length - 1) {
         const arrow = document.createElement('div');
         arrow.className = 'evo-mini-arrow';
-        arrow.textContent = '→';
+        arrow.textContent = '←';
         evoTimeline.appendChild(arrow);
       }
     });
