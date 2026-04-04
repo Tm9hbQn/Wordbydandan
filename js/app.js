@@ -364,24 +364,20 @@ async function saveNewWord(notes) {
     container.classList.remove('fade-out', 'fade-in');
 
     try {
-      const newWord = await insertWord({
+      await insertWord({
         word: currentWord,
         age_months: currentAgeMonths,
         notes: notes || null,
       });
 
-      // Show success
       showSuccess(`"${currentWord}" נוספה! 🌟`);
-
-      // Reload words
       await loadWords();
     } catch (err) {
       console.error('Error saving word:', err);
       showSuccess('אופס, משהו השתבש 😅');
+    } finally {
+      resetInput();
     }
-
-    // Reset input
-    resetInput();
   }, 300);
 }
 
