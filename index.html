@@ -230,17 +230,11 @@
 
   <footer class="main-footer">
     <p>כל הזכויות על המילים שמורות לדן-דן® 05.12.2024 - חיה בועטת</p>
+    <button class="export-btn" id="exportBtn">ייצוא מילים 📋</button>
+    <div class="storage-status" id="storageStatus"></div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/app.js"></script>
-  <script>
-    // Load Supabase SDK and initialize when ready
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-    s.onload = function() {
-      if (typeof initSupabaseAndReload === 'function') initSupabaseAndReload();
-    };
-    document.head.appendChild(s);
-  </script>
 </body>
 </html>

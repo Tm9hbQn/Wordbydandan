@@ -1665,6 +1665,31 @@ body {
   line-height: 1.8;
 }
 
+.export-btn {
+  display: inline-block;
+  margin-top: 0.8rem;
+  background: var(--lavender);
+  color: var(--deep-purple);
+  border: none;
+  border-radius: 50px;
+  padding: 0.5rem 1.5rem;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.export-btn:active {
+  transform: scale(0.95);
+}
+
+.storage-status {
+  margin-top: 0.5rem;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
 /* ===== Utility Classes ===== */
 .hidden {
   display: none !important;

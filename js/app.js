@@ -11,26 +11,17 @@ let useLocalStorage = false;
 
 function initSupabase() {
   try {
-    if (!window.supabase) {
-      console.warn('Supabase SDK not loaded yet, using localStorage');
+    if (!window.supabase || !window.supabase.createClient) {
+      console.warn('Supabase SDK not available, using localStorage');
       useLocalStorage = true;
       return;
     }
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     useLocalStorage = false;
-    console.log('Supabase connected');
+    console.log('Supabase connected successfully');
   } catch (e) {
     console.error('Supabase init failed:', e);
     useLocalStorage = true;
-  }
-}
-
-// Called when Supabase SDK finishes loading asynchronously
-function initSupabaseAndReload() {
-  if (supabase) return; // already initialized
-  initSupabase();
-  if (!useLocalStorage) {
-    loadWords(); // reload from Supabase
   }
 }
 
@@ -227,13 +218,29 @@ let searchQuery = '';
 /* ===== Initialize ===== */
 document.addEventListener('DOMContentLoaded', async () => {
   initSupabase();
+  updateStorageStatus();
   setupEventListeners();
   buildAgeOptions(ageOptions, null);
   await loadWords();
 });
 
+function updateStorageStatus() {
+  const el = document.getElementById('storageStatus');
+  if (el) {
+    el.textContent = useLocalStorage
+      ? '💾 אחסון מקומי (לא מחובר לענן)'
+      : '☁️ מחובר לסופרבייס';
+  }
+}
+
 /* ===== Event Listeners ===== */
 function setupEventListeners() {
+  // Export button
+  const exportBtn = document.getElementById('exportBtn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportWords);
+  }
+
   // Word input
   wordInput.addEventListener('input', onWordInput);
   wordInput.addEventListener('focus', onWordFocus);
@@ -618,6 +625,29 @@ function setupAgeWheel(wheel) {
   // Initial highlight after render
   requestAnimationFrame(() => {
     updateWheelHighlight();
+  });
+}
+
+/* ===== Export ===== */
+function exportWords() {
+  if (words.length === 0) {
+    showSuccess('אין מילים לייצוא');
+    return;
+  }
+  const data = JSON.stringify(words, null, 2);
+  navigator.clipboard.writeText(data).then(() => {
+    showSuccess('הועתק! 📋 (' + words.length + ' מילים)');
+  }).catch(() => {
+    // Fallback: create a textarea and select
+    const ta = document.createElement('textarea');
+    ta.value = data;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showSuccess('הועתק! 📋 (' + words.length + ' מילים)');
   });
 }
 
