@@ -173,6 +173,25 @@
         <label>הערות</label>
         <div class="modal-input modal-notes" id="editNotesInput" contenteditable="true" role="textbox" data-placeholder="הוסיפו הקשר..."></div>
       </div>
+      <div class="modal-field">
+        <label>התפתחות מילה 🔗</label>
+        <div class="link-section" id="linkSection">
+          <div class="link-current hidden" id="linkCurrent">
+            <span class="link-badge" id="linkBadge"></span>
+            <button class="link-remove-btn" id="linkRemoveBtn" aria-label="הסירו קישור">✕</button>
+          </div>
+          <div class="link-search-wrap" id="linkSearchWrap">
+            <input
+              class="link-search-input"
+              id="linkSearchInput"
+              type="text"
+              placeholder="חפשו מילה לקשר..."
+              autocomplete="off"
+            >
+            <div class="link-results hidden" id="linkResults"></div>
+          </div>
+        </div>
+      </div>
       <div class="modal-actions">
         <button class="modal-delete-btn" id="editDeleteBtn">מחקו 🗑️</button>
         <button class="modal-save-btn" id="editSaveBtn">שמרו 💕</button>

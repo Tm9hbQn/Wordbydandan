@@ -1021,6 +1021,174 @@ body {
   transition: all 0.3s;
 }
 
+/* ===== Word Link UI ===== */
+.link-section {
+  position: relative;
+}
+
+.link-current {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.link-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, var(--baby-blue), var(--lavender));
+  border-radius: 50px;
+  padding: 0.4rem 1rem;
+  font-family: 'Secular One', sans-serif;
+  font-size: 0.95rem;
+  color: var(--deep-purple);
+}
+
+.link-badge::before {
+  content: '🔗';
+  font-size: 0.8rem;
+}
+
+.link-remove-btn {
+  background: var(--lavender);
+  border: none;
+  border-radius: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.65rem;
+  color: var(--soft-purple);
+  transition: background 0.2s;
+}
+
+.link-remove-btn:hover {
+  background: #FFCDD2;
+  color: #E53935;
+}
+
+.link-search-input {
+  width: 100%;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.9rem;
+  color: var(--deep-purple);
+  background: var(--lavender);
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 0.6rem 1rem;
+  outline: none;
+  direction: rtl;
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.link-search-input:focus {
+  background: #EDE7F6;
+  border-color: rgba(109, 92, 231, 0.3);
+}
+
+.link-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(45, 27, 105, 0.15);
+  max-height: 160px;
+  overflow-y: auto;
+  z-index: 10;
+  margin-top: 0.3rem;
+}
+
+.link-result-item {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.9rem;
+  color: var(--deep-purple);
+  border-bottom: 1px solid var(--lavender);
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.link-result-item:last-child {
+  border-bottom: none;
+}
+
+.link-result-item:hover {
+  background: var(--lavender);
+}
+
+.link-result-item .link-result-age {
+  font-size: 0.75rem;
+  color: var(--soft-purple);
+}
+
+/* Timeline evolution connector */
+.timeline-evolution {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+}
+
+.timeline-evo-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--soft-purple);
+  font-size: 0.75rem;
+  font-family: 'Varela Round', sans-serif;
+  opacity: 0.7;
+}
+
+.timeline-evo-line::before {
+  content: '';
+  width: 2px;
+  height: 12px;
+  background: linear-gradient(180deg, var(--hot-pink), var(--soft-purple));
+  border-radius: 1px;
+}
+
+.timeline-evo-line::after {
+  content: '';
+  width: 2px;
+  height: 12px;
+  background: linear-gradient(180deg, var(--soft-purple), var(--teal));
+  border-radius: 1px;
+}
+
+/* Word card link indicator */
+.word-card-link {
+  font-size: 0.7rem;
+  color: var(--soft-purple);
+  margin-top: 0.3rem;
+  opacity: 0.7;
+}
+
+.word-card-link::before {
+  content: '🔗 ';
+}
+
+/* Timeline card link indicator */
+.timeline-card-link {
+  font-size: 0.65rem;
+  color: var(--soft-purple);
+  margin-top: 0.2rem;
+  opacity: 0.7;
+}
+
+.timeline-card-link::before {
+  content: '🔗 ';
+}
+
 /* ===== View Toggle ===== */
 .view-toggle {
   display: flex;

@@ -296,6 +296,52 @@ function setupEventListeners() {
   if (gridViewBtn) gridViewBtn.addEventListener('click', () => switchView('grid'));
   if (timelineViewBtn) timelineViewBtn.addEventListener('click', () => switchView('timeline'));
 
+  // Word linking in edit modal
+  linkSearchInput.addEventListener('input', () => {
+    const q = linkSearchInput.value.trim();
+    if (!q) {
+      linkResults.classList.add('hidden');
+      return;
+    }
+    const matches = words.filter((w) =>
+      w.id !== editingWordId && fuzzyMatchWord(q, w)
+    ).slice(0, 8);
+    linkResults.innerHTML = '';
+    if (matches.length === 0) {
+      linkResults.classList.add('hidden');
+      return;
+    }
+    matches.forEach((w) => {
+      const item = document.createElement('div');
+      item.className = 'link-result-item';
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = w.word;
+      const ageSpan = document.createElement('span');
+      ageSpan.className = 'link-result-age';
+      ageSpan.textContent = w.age_months !== null ? ageMonthsToHebrew(w.age_months) : '';
+      item.appendChild(nameSpan);
+      item.appendChild(ageSpan);
+      item.addEventListener('click', () => {
+        editingLinkedTo = w.id;
+        updateLinkUI();
+        linkSearchInput.value = '';
+        linkResults.classList.add('hidden');
+      });
+      linkResults.appendChild(item);
+    });
+    linkResults.classList.remove('hidden');
+  });
+
+  linkSearchInput.addEventListener('blur', () => {
+    // Delay to allow click on results
+    setTimeout(() => linkResults.classList.add('hidden'), 200);
+  });
+
+  linkRemoveBtn.addEventListener('click', () => {
+    editingLinkedTo = null;
+    updateLinkUI();
+  });
+
   // Search
   searchInput.addEventListener('input', () => {
     searchQuery = searchInput.value.trim();
@@ -633,6 +679,14 @@ function renderWords() {
       card.appendChild(notesEl);
     }
 
+    const linkedWord = w.linked_to ? words.find((o) => o.id === w.linked_to) : null;
+    if (linkedWord) {
+      const linkEl = document.createElement('div');
+      linkEl.className = 'word-card-link';
+      linkEl.textContent = linkedWord.word;
+      card.appendChild(linkEl);
+    }
+
     wordsGrid.appendChild(card);
   });
 
@@ -713,21 +767,46 @@ function observeRevealElements() {
 }
 
 /* ===== Edit Modal ===== */
+let editingLinkedTo = null;
+
+const linkSection = $('#linkSection');
+const linkCurrent = $('#linkCurrent');
+const linkBadge = $('#linkBadge');
+const linkRemoveBtn = $('#linkRemoveBtn');
+const linkSearchInput = $('#linkSearchInput');
+const linkResults = $('#linkResults');
+const linkSearchWrap = $('#linkSearchWrap');
+
 function openEditModal(word) {
   editingWordId = word.id;
+  editingLinkedTo = word.linked_to || null;
   editWordInput.textContent = word.word;
   editNotesInput.textContent = word.notes || '';
 
   buildAgeOptions(editAgePicker, word.age_months);
+  updateLinkUI();
+  linkSearchInput.value = '';
+  linkResults.classList.add('hidden');
 
   editModal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+}
+
+function updateLinkUI() {
+  const linkedWord = editingLinkedTo ? words.find((w) => w.id === editingLinkedTo) : null;
+  if (linkedWord) {
+    linkBadge.textContent = linkedWord.word;
+    linkCurrent.classList.remove('hidden');
+  } else {
+    linkCurrent.classList.add('hidden');
+  }
 }
 
 function closeEditModal() {
   editModal.classList.add('hidden');
   document.body.style.overflow = '';
   editingWordId = null;
+  editingLinkedTo = null;
 }
 
 async function handleEditSave() {
@@ -739,7 +818,12 @@ async function handleEditSave() {
   const notes = getInputText(editNotesInput).trim() || null;
 
   try {
-    await updateWord(editingWordId, { word, age_months: ageMonths, notes });
+    await updateWord(editingWordId, {
+      word,
+      age_months: ageMonths,
+      notes,
+      linked_to: editingLinkedTo,
+    });
     closeEditModal();
     await loadWords();
     showSuccess('עודכן! ✨');
@@ -759,6 +843,42 @@ async function handleDelete() {
   } catch (err) {
     console.error('Error deleting word:', err);
   }
+}
+
+/* ===== Word Evolution Chain ===== */
+function getEvolutionChain(wordId) {
+  // Find the root (earliest version) by following linked_to backwards
+  const byId = new Map(words.map((w) => [w.id, w]));
+  const linksTo = new Map(); // child -> parent (linked_to)
+  const linksFrom = new Map(); // parent -> child
+
+  words.forEach((w) => {
+    if (w.linked_to) {
+      linksTo.set(w.id, w.linked_to);
+      linksFrom.set(w.linked_to, w.id);
+    }
+  });
+
+  // Find root: go backwards via linked_to
+  let root = wordId;
+  const visited = new Set();
+  while (linksTo.has(root) && !visited.has(root)) {
+    visited.add(root);
+    root = linksTo.get(root);
+  }
+
+  // Build chain forward from root
+  const chain = [];
+  let current = root;
+  visited.clear();
+  while (current && !visited.has(current)) {
+    visited.add(current);
+    const w = byId.get(current);
+    if (w) chain.push(w);
+    current = linksFrom.get(current);
+  }
+
+  return chain.sort((a, b) => (a.age_months ?? 0) - (b.age_months ?? 0));
 }
 
 /* ===== View Toggle ===== */
@@ -836,9 +956,34 @@ function renderTimeline() {
       card.appendChild(notesEl);
     }
 
+    // Show link indicator
+    const linkedWord = w.linked_to ? words.find((o) => o.id === w.linked_to) : null;
+    if (linkedWord) {
+      const linkEl = document.createElement('div');
+      linkEl.className = 'timeline-card-link';
+      linkEl.textContent = linkedWord.word;
+      card.appendChild(linkEl);
+    }
+
     item.appendChild(dot);
     item.appendChild(card);
     timelineTrack.appendChild(item);
+
+    // Check if next word in sorted list is linked to this one (evolution connector)
+    const nextIdx = i + 1;
+    if (nextIdx < sorted.length) {
+      const nextWord = sorted[nextIdx];
+      // Show connector if this word links to next, or next links to this
+      if (w.linked_to === nextWord.id || nextWord.linked_to === w.id) {
+        const evo = document.createElement('div');
+        evo.className = 'timeline-evolution';
+        const evoLine = document.createElement('div');
+        evoLine.className = 'timeline-evo-line';
+        evoLine.textContent = '↕';
+        evo.appendChild(evoLine);
+        timelineTrack.appendChild(evo);
+      }
+    }
   });
 
   // Initial overlay update

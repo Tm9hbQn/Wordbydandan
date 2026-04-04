@@ -6,9 +6,17 @@ CREATE TABLE IF NOT EXISTS words (
   word TEXT NOT NULL,
   age_months INTEGER,
   notes TEXT,
+  linked_to UUID REFERENCES words(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration: add linked_to if table already exists
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='words' AND column_name='linked_to') THEN
+    ALTER TABLE words ADD COLUMN linked_to UUID REFERENCES words(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- Enable Row Level Security
 ALTER TABLE words ENABLE ROW LEVEL SECURITY;
