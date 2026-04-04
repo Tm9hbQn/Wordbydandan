@@ -218,7 +218,11 @@ const timelineTrack = $('#timelineTrack');
 const timelineAgeOverlay = $('#timelineAgeOverlay');
 const timelineAgeText = $('#timelineAgeText');
 
+const searchInput = $('#searchInput');
+const searchClear = $('#searchClear');
+
 let currentView = 'timeline';
+let searchQuery = '';
 
 /* ===== Initialize ===== */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -292,7 +296,19 @@ function setupEventListeners() {
   if (gridViewBtn) gridViewBtn.addEventListener('click', () => switchView('grid'));
   if (timelineViewBtn) timelineViewBtn.addEventListener('click', () => switchView('timeline'));
 
-  // Timeline scroll observer
+  // Search
+  searchInput.addEventListener('input', () => {
+    searchQuery = searchInput.value.trim();
+    searchClear.classList.toggle('hidden', !searchQuery);
+    renderWords();
+  });
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchQuery = '';
+    searchClear.classList.add('hidden');
+    renderWords();
+  });
+
   // Timeline scroll - listen on the scroll container
   const timelineScroll = $('#timelineScroll');
   if (timelineScroll) {
@@ -509,6 +525,63 @@ function setupAgeWheel(wheel) {
   });
 }
 
+/* ===== Fuzzy Search ===== */
+function fuzzyMatch(query, text) {
+  if (!query) return true;
+  query = query.toLowerCase();
+  text = text.toLowerCase();
+
+  // Exact substring
+  if (text.includes(query)) return true;
+
+  // Check if query chars appear in order (fuzzy)
+  let qi = 0;
+  for (let ti = 0; ti < text.length && qi < query.length; ti++) {
+    if (text[ti] === query[qi]) qi++;
+  }
+  if (qi === query.length) return true;
+
+  // Levenshtein distance for short strings — allow typos
+  if (query.length >= 2 && text.length >= 2) {
+    const maxDist = query.length <= 3 ? 1 : 2;
+    if (levenshtein(query, text) <= maxDist) return true;
+    // Also check each word in notes
+  }
+
+  // Check if query is a subsequence with at most 1 skip
+  return false;
+}
+
+function fuzzyMatchWord(query, wordObj) {
+  if (!query) return true;
+  if (fuzzyMatch(query, wordObj.word)) return true;
+  if (wordObj.notes && fuzzyMatch(query, wordObj.notes)) return true;
+  return false;
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 3) return Math.max(m, n); // quick exit
+  const dp = Array.from({ length: m + 1 }, (_, i) => i);
+  for (let j = 1; j <= n; j++) {
+    let prev = dp[0];
+    dp[0] = j;
+    for (let i = 1; i <= m; i++) {
+      const tmp = dp[i];
+      dp[i] = a[i - 1] === b[j - 1]
+        ? prev
+        : 1 + Math.min(prev, dp[i], dp[i - 1]);
+      prev = tmp;
+    }
+  }
+  return dp[m];
+}
+
+function getFilteredWords() {
+  if (!searchQuery) return words;
+  return words.filter((w) => fuzzyMatchWord(searchQuery, w));
+}
+
 /* ===== Load & Render Words ===== */
 async function loadWords() {
   try {
@@ -521,6 +594,7 @@ async function loadWords() {
 
 function renderWords() {
   wordsGrid.innerHTML = '';
+  const filtered = getFilteredWords();
 
   if (words.length === 0) {
     emptyState.classList.remove('hidden');
@@ -531,7 +605,11 @@ function renderWords() {
   emptyState.classList.add('hidden');
   animateCount(wordCount, words.length);
 
-  words.forEach((w, i) => {
+  if (filtered.length === 0 && searchQuery) {
+    wordsGrid.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--soft-purple);font-family:Varela Round,sans-serif;">לא נמצאו תוצאות 🤷</div>';
+  }
+
+  filtered.forEach((w, i) => {
     const card = document.createElement('div');
     card.className = 'word-card reveal-on-scroll';
     card.style.setProperty('--reveal-delay', `${Math.min(i * 0.06, 0.5)}s`);
@@ -717,9 +795,15 @@ function renderTimeline() {
   timelineTrack.innerHTML = '';
 
   // Sort by age descending (newest first, going backwards)
-  const sorted = [...words].sort((a, b) => (b.age_months ?? 0) - (a.age_months ?? 0));
+  const filtered = getFilteredWords();
+  const sorted = [...filtered].sort((a, b) => (b.age_months ?? 0) - (a.age_months ?? 0));
 
-  if (sorted.length === 0) return;
+  if (sorted.length === 0) {
+    if (searchQuery) {
+      timelineTrack.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--soft-purple);font-family:Varela Round,sans-serif;">לא נמצאו תוצאות 🤷</div>';
+    }
+    return;
+  }
 
   sorted.forEach((w, i) => {
     const item = document.createElement('div');

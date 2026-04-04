@@ -75,7 +75,7 @@
         <div class="age-wheel" id="ageOptions"></div>
       </div>
       <button class="age-confirm-btn" id="ageConfirmBtn">בחרו 👆</button>
-      <button class="just-now-btn" id="justNowBtn">עכשיו! 🎉</button>
+      <button class="just-now-btn" id="justNowBtn" style="display:none;">עכשיו! 🎉</button>
     </div>
   </section>
 
@@ -103,6 +103,22 @@
     <span class="success-emoji">🎉</span>
     <span class="success-text" id="successText"></span>
   </div>
+
+  <!-- Search Section -->
+  <section class="search-section" id="searchSection">
+    <div class="search-container">
+      <span class="search-icon">🔍</span>
+      <input
+        class="search-input"
+        id="searchInput"
+        type="text"
+        placeholder="חפשו מילה..."
+        aria-label="חיפוש מילים"
+        autocomplete="off"
+      >
+      <button class="search-clear hidden" id="searchClear" aria-label="נקו חיפוש">✕</button>
+    </div>
+  </section>
 
   <!-- Words List Section -->
   <section class="words-section" id="wordsSection">

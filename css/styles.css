@@ -595,6 +595,93 @@ body {
   100% { transform: scale(1); }
 }
 
+/* ===== Search Section ===== */
+.search-section {
+  position: relative;
+  z-index: 10;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 1.2rem 0.5rem;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: white;
+  border-radius: 50px;
+  padding: 0.6rem 1.2rem;
+  box-shadow: 0 2px 12px rgba(109, 92, 231, 0.08);
+  border: 2px solid transparent;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.search-container:focus-within {
+  border-color: rgba(109, 92, 231, 0.2);
+  box-shadow: var(--card-shadow);
+}
+
+.search-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.search-container:focus-within .search-icon {
+  opacity: 1;
+}
+
+.search-input {
+  flex: 1;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 1rem;
+  color: var(--deep-purple);
+  background: transparent;
+  border: none;
+  outline: none;
+  direction: rtl;
+  min-width: 0;
+}
+
+.search-input::placeholder {
+  color: #C4B5D9;
+}
+
+.search-clear {
+  background: var(--lavender);
+  border: none;
+  border-radius: 50%;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--soft-purple);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.search-clear:hover {
+  background: var(--pink);
+}
+
+.search-results-info {
+  text-align: center;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.85rem;
+  color: var(--soft-purple);
+  margin-top: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.search-results-info.visible {
+  opacity: 1;
+}
+
 /* ===== Words Section ===== */
 .words-section {
   position: relative;
