@@ -20,16 +20,14 @@
 ```
 /
 ├── index.html              # Main single-page app
-├── tests.html              # Test/preview page for pixel art characters (WIP)
-├── CLAUDE.md               # This file
+├── tests.html              # Pixel art character studio / test page
+├── CLAUDE.md               # This file - READ BEFORE MAKING CHANGES
 ├── css/
-│   ├── styles.css          # All main site styles (~2000 lines)
+│   ├── styles.css          # All main site styles (~2100 lines)
 │   ├── pixel-baby.css      # Pixel art baby character styles (not loaded in main)
-│   └── pixel-baby-tests.css # Test page styles (WIP)
 ├── js/
-│   ├── app.js              # All main app logic (~1700 lines)
+│   ├── app.js              # All main app logic (~1800 lines)
 │   ├── pixel-baby.js       # Pixel art baby character code (not loaded in main)
-│   └── pixel-baby-tests.js # Test page scripts (WIP)
 └── supabase/               # Supabase config
 ```
 
@@ -129,13 +127,81 @@ words {
 ## Development Notes
 - The site is a single-page app with no build step
 - All JS is vanilla (no transpilation needed)
-- Cache-bust JS files with `?v=N` query parameter
+- Cache-bust JS files with `?v=N` query parameter - **MUST increment on every JS change**
 - The site uses IntersectionObserver for scroll-reveal animations
 - Fuzzy search uses Levenshtein distance algorithm
-- Timeline is vertical (flex-direction: column) with horizontal scroll for the age overlay
-- Always test on mobile viewport (~375px width) as the site is mobile-first (max-width: 600px)
+- Timeline is vertical (flex-direction: column) with vertical scroll
+- Always test on mobile viewport (~375px width) as the site is mobile-first (max-width: 600px/700px)
 
 ## Git Workflow
 - Main branch: `main`
 - Feature branches: `claude/*` naming convention
 - Push to main for deployment (GitHub Pages auto-deploys)
+
+---
+
+## Critical Pre-Push Checklist
+
+**ALWAYS run these checks before pushing. They prevent 80% of recurring bugs.**
+
+### 1. Cache Buster Updated
+```bash
+grep 'app.js?v=' index.html
+```
+The `?v=N` number in `<script src="js/app.js?v=N">` MUST be incremented whenever app.js changes. Without this, browsers serve stale JS and changes appear broken.
+
+### 2. RTL Arrow Direction
+```bash
+grep '→' js/app.js
+```
+There must be ZERO `→` arrows in content-generating code (comments are OK). All user-visible arrows in evolution chains must use `←` (right-to-left). Check these locations:
+- `join(' ← ')` in word card link text (~line 770)
+- `join(' ← ')` in timeline card link text (~line 1367)
+- `'←'` in modal mini-timeline arrow (~line 939)
+
+### 3. Files Referenced in HTML Actually Exist
+```bash
+# Check all CSS/JS refs in index.html resolve to real files
+grep -oP '(?:href|src)="([^"]*\.(css|js))"' index.html | while read f; do
+  file=$(echo "$f" | sed 's/.*="//;s/"//;s/?.*//')
+  [ ! -f "$file" ] && echo "MISSING: $file"
+done
+```
+Prevents 404 errors from referencing removed or renamed files.
+
+### 4. Pixel Baby Not Loaded in Main Site
+```bash
+grep 'pixel-baby' index.html
+```
+Must return empty. The pixel baby CSS/JS are NOT loaded in the main site (removed, development on tests.html only).
+
+### 5. HTML/JS Syntax Sanity
+```bash
+# Check for unclosed strings or obvious JS errors
+node -c js/app.js 2>&1 | head -5
+```
+Quick syntax validation before pushing.
+
+### 6. All New Files Are Git-Tracked
+```bash
+git status --short
+```
+Check that any new files (like tests.html) are staged. Untracked files won't deploy to GitHub Pages.
+
+### 7. Key Text Content Verification
+```bash
+# Trends title should be just "מגמות" (not "מגמות צמיחה")
+grep 'מגמות' index.html
+# Words title emoji should be at the START (right in RTL)
+grep 'words-title' index.html
+```
+
+### Common Gotchas Log
+| Issue | Root Cause | Prevention |
+|-------|-----------|------------|
+| Arrows showing `→` instead of `←` | Browser cache serving old JS | Increment `?v=N` cache buster |
+| New page showing 404 | File not committed/pushed | Run `git status` before push |
+| Pixel baby appearing on main site | CSS/JS still referenced in index.html | Check with `grep pixel-baby index.html` |
+| CSS changes not reflecting | Browser cache | Add `?v=N` to CSS links if needed |
+| Timeline showing all words (no pagination) | `timelineDisplayCount` not resetting | Verify reset in `renderWords()` |
+| Stat card highlights broken | Multiple conflicting animation declarations | Check CSS specificity order |
