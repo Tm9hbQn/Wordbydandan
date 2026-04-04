@@ -39,11 +39,12 @@
 3. **Age Picker** - Scroll wheel picker for baby's age when word was spoken
 4. **Notes Section** - Optional context/story about the word
 5. **Success Toast** - Animated notification after adding a word
-6. **Words Section** - Display all words with Grid/Timeline toggle, search
-7. **Trends Section** - Growth chart (SVG), stat card with Lucide trending-up icon
-8. **Word Edit Modal** - View/edit word details, evolution chain linking
-9. **Evolution Chain Modal** - Full chain view with reorder controls
-10. **Footer** - Copyright, export button, test page link
+6. **Section Navigation** - Sticky nav bar with "אוצר מילים" / "מגמות" tabs + "הוסיפו מילה" button. Updates active state on scroll via IntersectionObserver
+7. **Words Section** - Display all words with Grid/Timeline toggle, search. Timeline shows 10 latest words by default with "load more" button (loads 50 more, then all remaining). Has blur-fade at bottom before load-more button
+8. **Trends Section** - Growth chart (SVG), stat card with Lucide trending-up icon
+9. **Word Edit Modal** - View/edit word details, evolution chain linking
+10. **Evolution Chain Modal** - Full chain view with reorder controls
+11. **Footer** - Copyright, export button, test page link
 
 ## Key Design Decisions
 
@@ -66,6 +67,21 @@
 - `Secular One` - Headings (bold Hebrew)
 - `Varela Round` - Body text (rounded, friendly)
 - `Karantina` - Word display text (playful, large)
+
+### Section Navigation
+- Sticky nav bar between input section and words section
+- Two section tabs: "אוצר מילים" (words) and "מגמות" (trends)
+- "+ הוסיפו מילה" button scrolls to input and focuses it
+- Active tab updates automatically on scroll via IntersectionObserver
+- Uses backdrop-filter blur for glassmorphism effect
+
+### Timeline Pagination
+- Default: shows 10 most recent words (sorted by age descending)
+- "טענו עוד" button loads 50 more words at a time
+- If remaining < 50, shows "טענו את כל X המילים"
+- Blur-fade gradient at bottom before the load-more button
+- `timelineDisplayCount` resets to 10 on any re-render (search, new word added)
+- State variable: `timelineDisplayCount` (global in app.js)
 
 ### Evolution Chains
 Words can be linked to show language evolution (e.g., "בא" → "פא פא" → "אבא").

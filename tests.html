@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>סטודיו דמויות - פיקסל ארט</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Varela+Round&family=Karantina:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Varela Round',sans-serif;background:#FFF9FB;color:#2D1B69;direction:rtl;min-height:100vh;overflow-x:hidden}
+    .page-header{background:linear-gradient(135deg,#F3E5F5,#FFE5EC,#FFF3E0);padding:2rem 1rem;text-align:center;border-radius:0 0 40px 40px;margin-bottom:2rem}
+    .page-header h1{font-family:'Secular One',sans-serif;font-size:1.8rem;margin-bottom:0.3rem}
+    .page-header p{font-size:0.9rem;color:#6C5CE7;opacity:0.8}
+    .back-link{display:inline-block;margin-top:0.8rem;color:#FF6B9D;text-decoration:none;font-size:0.85rem}
+    .section{max-width:700px;margin:0 auto 2.5rem;padding:0 1rem}
+    .section h2{font-family:'Secular One',sans-serif;font-size:1.3rem;margin-bottom:1rem;text-align:center;color:#6C5CE7}
+    .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem}
+    .demo-card{background:white;border-radius:20px;padding:1.2rem;text-align:center;box-shadow:0 4px 20px rgba(109,92,231,0.1);transition:transform 0.2s}
+    .demo-card:hover{transform:translateY(-3px)}
+    .demo-card canvas{margin:0 auto 0.6rem;display:block}
+    .demo-card .label{font-family:'Secular One',sans-serif;font-size:0.85rem;color:#2D1B69}
+    .demo-card .sub{font-size:0.7rem;color:#6C5CE7;opacity:0.7;margin-top:0.2rem}
+
+    /* Peek demo scenes */
+    .peek-scene{position:relative;background:white;border-radius:20px;padding:1.5rem;box-shadow:0 4px 20px rgba(109,92,231,0.1);height:200px;overflow:hidden;cursor:pointer}
+    .peek-card{position:absolute;background:linear-gradient(135deg,#6C5CE7,#FF6B9D);border-radius:16px;width:120px;height:120px;display:flex;align-items:center;justify-content:center;color:white;font-family:'Secular One',sans-serif;font-size:0.9rem;z-index:2;box-shadow:0 4px 16px rgba(108,92,231,0.3)}
+    .peek-baby{position:absolute;z-index:1;transition:transform 0.6s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s ease;opacity:0}
+    .peek-scene:hover .peek-baby,.peek-scene.active .peek-baby{opacity:1}
+    .peek-scene .peek-label{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:0.7rem;color:#6C5CE7;opacity:0.6;white-space:nowrap}
+
+    /* Effect wrappers */
+    .fx-ghost{filter:brightness(1.15) saturate(0.6);opacity:0.55}
+    .fx-ghost-wrap{position:relative;display:inline-block}
+    .fx-ghost-wrap::after{content:'';position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,rgba(160,180,255,0.35) 0%,transparent 70%);pointer-events:none;animation:ghostPulse 2.5s ease-in-out infinite}
+    @keyframes ghostPulse{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+
+    .fx-energy{filter:brightness(1.4) contrast(1.3) hue-rotate(160deg)}
+    .fx-energy-wrap{position:relative;display:inline-block}
+    .fx-energy-wrap::after{content:'';position:absolute;inset:-6px;border-radius:8px;box-shadow:0 0 12px 4px rgba(0,255,200,0.4),0 0 24px 8px rgba(0,200,255,0.2);animation:energyPulse 1.5s ease-in-out infinite;pointer-events:none}
+    @keyframes energyPulse{0%,100%{opacity:0.6;box-shadow:0 0 12px 4px rgba(0,255,200,0.4),0 0 24px 8px rgba(0,200,255,0.2)}50%{opacity:1;box-shadow:0 0 20px 8px rgba(0,255,200,0.6),0 0 40px 16px rgba(0,200,255,0.3)}}
+
+    .fx-holo-wrap{position:relative;display:inline-block}
+    .fx-holo-wrap canvas{animation:holoShift 3s linear infinite}
+    @keyframes holoShift{0%{filter:hue-rotate(0deg) brightness(1.1)}33%{filter:hue-rotate(60deg) brightness(1.2)}66%{filter:hue-rotate(180deg) brightness(1.1)}100%{filter:hue-rotate(360deg) brightness(1.1)}}
+
+    .fx-shadow canvas{filter:brightness(0) opacity(0.2)}
+    .fx-shadow-wrap{position:relative;display:inline-block;transform:scaleY(0.5) skewX(-15deg);transform-origin:bottom center;opacity:0.3}
+
+    .fx-neon{filter:brightness(2) contrast(1.5) saturate(2)}
+    .fx-neon-wrap{position:relative;display:inline-block}
+    .fx-neon-wrap::after{content:'';position:absolute;inset:-4px;box-shadow:0 0 8px 2px rgba(255,0,200,0.5),0 0 20px 6px rgba(200,0,255,0.3);border-radius:6px;pointer-events:none;animation:neonFlicker 2s steps(4) infinite}
+    @keyframes neonFlicker{0%,100%{opacity:1}25%{opacity:0.8}50%{opacity:1}75%{opacity:0.6}}
+
+    /* Particle canvas */
+    .particle-canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3}
+
+    /* Interactive section */
+    .interactive-scene{position:relative;background:linear-gradient(135deg,#F3E5F5 0%,#FFE5EC 100%);border-radius:24px;padding:2rem;min-height:250px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;box-shadow:0 4px 20px rgba(109,92,231,0.1);cursor:pointer;overflow:hidden}
+    .interactive-scene .hint{font-size:0.8rem;color:#6C5CE7;opacity:0.6}
+
+    .bubble{position:absolute;background:white;border:3px solid #2D1B69;padding:5px 10px;font-family:'Secular One',sans-serif;font-size:13px;color:#2D1B69;white-space:nowrap;opacity:0;transition:opacity 0.3s;z-index:10;pointer-events:none}
+    .bubble.show{opacity:1}
+    .bubble::after{content:'';position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid #2D1B69}
+    .bubble::before{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);border-left:4px solid transparent;border-right:4px solid transparent;border-top:7px solid white;z-index:1}
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>סטודיו דמויות פיקסל ארט</h1>
+    <p>עיצובים, אפקטים ואינטראקציות לתינוקת דניאלה</p>
+    <a href="index.html" class="back-link">← חזרה לאתר</a>
+  </header>
+
+  <section class="section" id="spriteGallery">
+    <h2>גרסאות בסיסיות</h2>
+    <div class="card-grid" id="basicGrid"></div>
+  </section>
+
+  <section class="section" id="effectsSection">
+    <h2>אפקטים מיוחדים</h2>
+    <div class="card-grid" id="effectsGrid"></div>
+  </section>
+
+  <section class="section" id="peekSection">
+    <h2>הצצה מאחורי כרטיס</h2>
+    <div class="card-grid" id="peekGrid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>
+  </section>
+
+  <section class="section" id="interactiveSection">
+    <h2>אינטראקטיבי - לחצו!</h2>
+    <div class="interactive-scene" id="interactiveScene">
+      <span class="hint">לחצו כאן</span>
+    </div>
+  </section>
+
+  <script>
+  (function(){
+    // ==========================================
+    // COLOR PALETTES
+    // ==========================================
+    var PAL = {
+      normal: {'.':null,'H':'#DAA54A','h':'#C09038','S':'#FDDCB5','s':'#EDB78E','E':'#2D1B69','e':'#FFFFFF','M':'#FF8FA0','L':'#E85A7A','P':'#FFB0C8','p':'#FF8FAF','W':'#FFFFFF','R':'#FF8FAF'},
+      cool:   {'.':null,'H':'#C4A44A','h':'#A88838','S':'#F0D0A8','s':'#D8B888','E':'#1A1040','e':'#E0E8FF','M':'#9090FF','L':'#7070E0','P':'#A0B8E8','p':'#8898D0','W':'#E8F0FF','R':'#8898D0'},
+      warm:   {'.':null,'H':'#E8A030','h':'#D08828','S':'#FFE0C0','s':'#F0C8A0','E':'#301818','e':'#FFF8F0','M':'#FF7070','L':'#E04848','P':'#FFAAAA','p':'#FF8888','W':'#FFF0F0','R':'#FF8888'},
+      neon:   {'.':null,'H':'#FFE000','h':'#E0C000','S':'#FFF0D0','s':'#FFE0A0','E':'#000030','e':'#00FFE0','M':'#FF00FF','L':'#FF0080','P':'#00FFD0','p':'#00D8B0','W':'#FFFFFF','R':'#FF00FF'},
+    };
+
+    // ==========================================
+    // SPRITES  - multiple sizes
+    // ==========================================
+
+    // MICRO: 8w x 11h - ultra simple, single pixel eyes
+    var MICRO = {
+      idle: [
+        '...HH...',
+        '..HHHH..',
+        '..HhSH..',
+        '.HSESSH.',
+        '.SSSSSS.',
+        '..SLLS..',
+        '..pPPp..',
+        '.pPWPp..',
+        '.pPPPp..',
+        '..S..S..',
+        '..R..R..',
+      ],
+      wave: [
+        '...HH...',
+        '..HHHH..',
+        '..HhSH..',
+        '.HSESSH.',
+        '.SSSSSS.',
+        '..SLLS..',
+        '..pPPp.S',
+        '.pPWPpS.',
+        '.pPPPp..',
+        '..S..S..',
+        '..R..R..',
+      ]
+    };
+
+    // STANDARD: 12w x 17h - clean single-pixel eyes
+    var STANDARD = {
+      idle: [
+        '.....HH.....',
+        '....hHHh....',
+        '...HHHHHH...',
+        '..HHHHHHHH..',
+        '..HhSSSSHh..',
+        '..HSSSSSSH..',
+        '..SSESSEGS..',
+        '..SSSSSSSS..',
+        '..SMSSSSMS..',
+        '....SLLS....',
+        '....SSSS....',
+        '...pPPPPp...',
+        '..SpPWPWpS..',
+        '..SpPPPPpS..',
+        '...pPPPPp...',
+        '....SS.SS...',
+        '....RR.RR...',
+      ],
+      wave: [
+        '.....HH.....',
+        '....hHHh....',
+        '...HHHHHH...',
+        '..HHHHHHHH..',
+        '..HhSSSSHh..',
+        '..HSSSSSSH..',
+        '..SSESSEGS..',
+        '..SSSSSSSS..',
+        '..SMSSSSMS..',
+        '....SLLS....',
+        '....SSSS.S..',
+        '...pPPPPpS..',
+        '..SpPWPWp...',
+        '..SpPPPPp...',
+        '...pPPPPp...',
+        '....SS.SS...',
+        '....RR.RR...',
+      ]
+    };
+    // Fix G -> same as E for dark eye
+    // Actually use separate eye positions for standard sprite
+    // Let me fix: use E for eyes in standard too
+    // Replace G with E in standard sprites
+    STANDARD.idle[6] = '..SSESSESS..';
+    STANDARD.wave[6] = '..SSESSESS..';
+
+    // HD: 16w x 21h - 2x2 eyes with outer sparkle
+    var HD = {
+      idle: [
+        '.......HH.......',
+        '......hHHh......',
+        '.....HHHHHH.....',
+        '....HHHHHHHH....',
+        '...HHHHHHHHHH...',
+        '..HHHHHHHHHHHH..',
+        '..HHhSSSSSSHhH..',
+        '..HSSSSSSSSSSH..',
+        '..SSSeESSSSEeS..',
+        '..SSSEESSSSEES..',
+        '..SSSSSSSSSSSS..',
+        '...SsMSSSSMsS...',
+        '....SSSLLSSS....',
+        '.....SSSSSS.....',
+        '......SSSS......',
+        '.....pPPPPp.....',
+        '....pPPWPWPp....',
+        '...SpPPPPPPpS...',
+        '...SpPWPPWPpS...',
+        '....SS....SS....',
+        '....RR....RR....',
+      ]
+    };
+    // fix width issues - ensure all 16 wide
+    HD.idle = HD.idle.map(function(row) {
+      while (row.length < 16) row += '.';
+      return row.substring(0, 16);
+    });
+
+    // ==========================================
+    // RENDERING
+    // ==========================================
+    function render(sprite, scale, colors) {
+      var c = colors || PAL.normal;
+      var canvas = document.createElement('canvas');
+      var rows = sprite.length, cols = sprite[0].length;
+      canvas.width = cols * scale;
+      canvas.height = rows * scale;
+      canvas.style.imageRendering = 'pixelated';
+      canvas.style.display = 'block';
+      var ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      for (var y = 0; y < rows; y++) {
+        for (var x = 0; x < cols; x++) {
+          var col = c[sprite[y][x]];
+          if (col) {
+            ctx.fillStyle = col;
+            ctx.fillRect(x*scale, y*scale, scale, scale);
+          }
+        }
+      }
+      return canvas;
+    }
+
+    function setFrame(canvas, sprite, scale, colors) {
+      var c = colors || PAL.normal;
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      for (var y = 0; y < sprite.length; y++) {
+        for (var x = 0; x < sprite[y].length; x++) {
+          var col = c[sprite[y][x]];
+          if (col) {
+            ctx.fillStyle = col;
+            ctx.fillRect(x*scale, y*scale, scale, scale);
+          }
+        }
+      }
+    }
+
+    // ==========================================
+    // 1. BASIC GALLERY
+    // ==========================================
+    var basicGrid = document.getElementById('basicGrid');
+
+    var basics = [
+      { name: 'Micro (8px)', sprite: MICRO.idle, scale: 7, sub: '8×11 פיקסלים' },
+      { name: 'Standard (12px)', sprite: STANDARD.idle, scale: 5, sub: '12×17 פיקסלים' },
+      { name: 'HD (16px)', sprite: HD.idle, scale: 4, sub: '16×21 פיקסלים' },
+      { name: 'Standard גדול', sprite: STANDARD.idle, scale: 7, sub: 'סקייל ×7' },
+      { name: 'צבעים חמים', sprite: STANDARD.idle, scale: 5, sub: 'פלטה חמה', pal: 'warm' },
+      { name: 'צבעים קרים', sprite: STANDARD.idle, scale: 5, sub: 'פלטה קרה', pal: 'cool' },
+    ];
+
+    basics.forEach(function(b) {
+      var card = document.createElement('div');
+      card.className = 'demo-card';
+      var c = render(b.sprite, b.scale, b.pal ? PAL[b.pal] : PAL.normal);
+      card.appendChild(c);
+      var label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = b.name;
+      card.appendChild(label);
+      if (b.sub) {
+        var sub = document.createElement('div');
+        sub.className = 'sub';
+        sub.textContent = b.sub;
+        card.appendChild(sub);
+      }
+      basicGrid.appendChild(card);
+    });
+
+    // ==========================================
+    // 2. EFFECTS
+    // ==========================================
+    var effectsGrid = document.getElementById('effectsGrid');
+
+    var effects = [
+      { name: 'רוח רפאים', cls: 'fx-ghost-wrap', canvasCls: 'fx-ghost' },
+      { name: 'אנרגיית לייזר', cls: 'fx-energy-wrap', canvasCls: 'fx-energy' },
+      { name: 'הולוגרפי', cls: 'fx-holo-wrap', canvasCls: '' },
+      { name: 'ניאון', cls: 'fx-neon-wrap', canvasCls: 'fx-neon', pal: 'neon' },
+      { name: 'צל', cls: 'fx-shadow-wrap', canvasCls: '' },
+    ];
+
+    effects.forEach(function(fx) {
+      var card = document.createElement('div');
+      card.className = 'demo-card';
+      var wrap = document.createElement('div');
+      wrap.className = fx.cls;
+      var c = render(STANDARD.idle, 5, fx.pal ? PAL[fx.pal] : PAL.normal);
+      if (fx.canvasCls) c.className = fx.canvasCls;
+      wrap.appendChild(c);
+      card.appendChild(wrap);
+      var label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = fx.name;
+      card.appendChild(label);
+      effectsGrid.appendChild(card);
+    });
+
+    // ==========================================
+    // 3. PEEK DEMOS
+    // ==========================================
+    var peekGrid = document.getElementById('peekGrid');
+
+    function createPeekDemo(config) {
+      var scene = document.createElement('div');
+      scene.className = 'peek-scene';
+
+      var card = document.createElement('div');
+      card.className = 'peek-card';
+      card.textContent = config.cardText || 'כרטיס';
+      card.style.cssText = config.cardStyle;
+      scene.appendChild(card);
+
+      var babyWrap = document.createElement('div');
+      babyWrap.className = 'peek-baby';
+      babyWrap.style.cssText = config.babyStyle;
+      var c = render(config.sprite || STANDARD.idle, config.scale || 4, PAL.normal);
+      babyWrap.appendChild(c);
+      scene.appendChild(babyWrap);
+
+      var label = document.createElement('div');
+      label.className = 'peek-label';
+      label.textContent = config.label;
+      scene.appendChild(label);
+
+      // Toggle on mobile tap
+      scene.addEventListener('click', function() {
+        scene.classList.toggle('active');
+      });
+
+      return scene;
+    }
+
+    var peekDemos = [
+      {
+        label: 'הצצה מימין',
+        cardText: 'מילה',
+        cardStyle: 'top:30px;right:80px;',
+        babyStyle: 'top:50px;right:40px;transform:translateX(30px);',
+        sprite: STANDARD.idle,
+        scale: 4,
+      },
+      {
+        label: 'הצצה מלמטה',
+        cardText: 'מילה',
+        cardStyle: 'top:20px;right:50%;transform:translateX(50%);',
+        babyStyle: 'bottom:15px;right:50%;transform:translateX(50%) rotate(-5deg);',
+        sprite: STANDARD.idle,
+        scale: 4,
+      },
+      {
+        label: 'הצצה באלכסון',
+        cardText: 'מילה',
+        cardStyle: 'top:30px;left:30px;width:140px;height:100px;',
+        babyStyle: 'top:90px;left:10px;transform:rotate(-10deg);',
+        sprite: STANDARD.idle,
+        scale: 4,
+      },
+      {
+        label: 'הצצה מלמעלה',
+        cardText: 'מילה',
+        cardStyle: 'bottom:20px;right:50%;transform:translateX(50%);width:150px;height:90px;',
+        babyStyle: 'top:15px;right:50%;transform:translateX(50%);',
+        sprite: MICRO.idle,
+        scale: 6,
+      },
+    ];
+
+    peekDemos.forEach(function(cfg) {
+      peekGrid.appendChild(createPeekDemo(cfg));
+    });
+
+    // ==========================================
+    // 4. INTERACTIVE SCENE
+    // ==========================================
+    var iScene = document.getElementById('interactiveScene');
+    var iBaby = null;
+    var iBubble = null;
+    var iActive = false;
+
+    // Create particle system
+    var particleCanvas = document.createElement('canvas');
+    particleCanvas.className = 'particle-canvas';
+    iScene.appendChild(particleCanvas);
+    var particles = [];
+
+    function initParticles() {
+      particleCanvas.width = iScene.offsetWidth;
+      particleCanvas.height = iScene.offsetHeight;
+    }
+
+    var sparkleColors = ['#FFD93D','#FF6B9D','#6C5CE7','#4ECDC4','#FF8A80','#FFFFFF'];
+
+    function spawnParticles(x, y, count) {
+      for (var i = 0; i < count; i++) {
+        particles.push({
+          x: x, y: y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4 - 1,
+          life: 1,
+          decay: 0.01 + Math.random() * 0.02,
+          size: 2 + Math.random() * 3,
+          color: sparkleColors[Math.floor(Math.random() * sparkleColors.length)]
+        });
+      }
+    }
+
+    function tickParticles() {
+      var ctx = particleCanvas.getContext('2d');
+      ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+      for (var i = particles.length - 1; i >= 0; i--) {
+        var p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.05;
+        p.life -= p.decay;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        // Draw pixel-style square
+        var s = Math.round(p.size);
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), s, s);
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(tickParticles);
+    }
+
+    initParticles();
+    tickParticles();
+    window.addEventListener('resize', initParticles);
+
+    var messages = ['!היי', '!אני דניאלה', '!בואו נשחק', '!אבאאא', '💕'];
+    var msgIdx = 0;
+
+    iScene.addEventListener('click', function(e) {
+      if (iActive) return;
+      iActive = true;
+
+      var hint = iScene.querySelector('.hint');
+      if (hint) hint.style.display = 'none';
+
+      if (!iBaby) {
+        iBaby = document.createElement('div');
+        iBaby.style.cssText = 'position:absolute;bottom:-80px;transition:all 0.5s cubic-bezier(0.34,1.56,0.64,1);z-index:5';
+        var c = render(STANDARD.idle, 5, PAL.normal);
+        iBaby.appendChild(c);
+        iScene.appendChild(iBaby);
+
+        iBubble = document.createElement('div');
+        iBubble.className = 'bubble';
+        iBubble.style.cssText = 'bottom:calc(100% + 8px);left:50%;transform:translateX(-50%)';
+        iBaby.appendChild(iBubble);
+      }
+
+      // Pop up
+      setTimeout(function() {
+        iBaby.style.bottom = '20px';
+        spawnParticles(iScene.offsetWidth/2, iScene.offsetHeight/2, 20);
+      }, 50);
+
+      // Wave animation
+      var canvas = iBaby.querySelector('canvas');
+      setTimeout(function() {
+        var waveCount = 0;
+        var waveInt = setInterval(function() {
+          setFrame(canvas, waveCount % 2 === 0 ? STANDARD.wave : STANDARD.idle, 5, PAL.normal);
+          waveCount++;
+          if (waveCount >= 6) {
+            clearInterval(waveInt);
+            setFrame(canvas, STANDARD.idle, 5, PAL.normal);
+          }
+        }, 250);
+      }, 500);
+
+      // Bubble
+      setTimeout(function() {
+        iBubble.textContent = messages[msgIdx];
+        iBubble.classList.add('show');
+        msgIdx = (msgIdx + 1) % messages.length;
+        spawnParticles(iScene.offsetWidth/2, iScene.offsetHeight/2 - 30, 12);
+      }, 800);
+
+      // Hide
+      setTimeout(function() {
+        iBubble.classList.remove('show');
+      }, 2800);
+      setTimeout(function() {
+        iBaby.style.bottom = '-80px';
+        iActive = false;
+      }, 3200);
+    });
+
+  })();
+  </script>
+</body>
+</html>

@@ -716,6 +716,8 @@ async function loadWords() {
 }
 
 function renderWords() {
+  // Reset timeline pagination when re-rendering (new word added, search, etc.)
+  timelineDisplayCount = 10;
   wordsGrid.innerHTML = '';
   const filtered = getFilteredWords();
 
@@ -1258,12 +1260,37 @@ function formatTimelineDate(months) {
   return `${mm}.${yyyy}`;
 }
 
+// Timeline pagination state
+let timelineDisplayCount = 10;
+const TIMELINE_PAGE_SIZE = 50;
+
 function renderTimeline() {
   timelineTrack.innerHTML = '';
 
   // Sort by age descending (newest first, going backwards)
   const filtered = getFilteredWords();
   const sorted = [...filtered].sort((a, b) => (b.age_months ?? 0) - (a.age_months ?? 0));
+
+  // Pagination: only show timelineDisplayCount items
+  const totalCount = sorted.length;
+  const displaySorted = sorted.slice(0, timelineDisplayCount);
+
+  // Show/hide load more button
+  const loadMoreWrap = document.getElementById('timelineLoadMoreWrap');
+  if (loadMoreWrap) {
+    if (totalCount > timelineDisplayCount) {
+      loadMoreWrap.classList.remove('hidden');
+      const loadMoreBtn = document.getElementById('timelineLoadMoreBtn');
+      const remaining = totalCount - timelineDisplayCount;
+      if (remaining > TIMELINE_PAGE_SIZE) {
+        loadMoreBtn.textContent = `טענו עוד ${TIMELINE_PAGE_SIZE} מילים`;
+      } else {
+        loadMoreBtn.textContent = `טענו את כל ${remaining} המילים`;
+      }
+    } else {
+      loadMoreWrap.classList.add('hidden');
+    }
+  }
 
   if (sorted.length === 0) {
     if (searchQuery) {
@@ -1295,7 +1322,7 @@ function renderTimeline() {
   // Map word IDs to their timeline DOM elements for scroll-to
   const wordItemMap = new Map();
 
-  sorted.forEach((w, i) => {
+  displaySorted.forEach((w, i) => {
     const isLinked = linkedWordIds.has(w.id);
 
     const item = document.createElement('div');
@@ -1363,8 +1390,8 @@ function renderTimeline() {
 
     // Dashed connector to next word if they are linked
     const nextIdx = i + 1;
-    if (nextIdx < sorted.length) {
-      const nextWord = sorted[nextIdx];
+    if (nextIdx < displaySorted.length) {
+      const nextWord = displaySorted[nextIdx];
       if (w.linked_to === nextWord.id || nextWord.linked_to === w.id) {
         const evo = document.createElement('div');
         evo.className = 'timeline-evolution';
@@ -1744,6 +1771,69 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(ta);
         showSuccess('הועתק! 📋 (' + words.length + ' מילים)');
       });
+    });
+  }
+
+  // --- Section Navigation ---
+  const navWords = document.getElementById('navWords');
+  const navTrends = document.getElementById('navTrends');
+  const navAddWord = document.getElementById('navAddWord');
+  const wordsSection = document.getElementById('wordsSection');
+  const trendsSection = document.getElementById('trendsSection');
+  const inputSection = document.getElementById('inputSection');
+
+  function setActiveNav(activeBtn) {
+    document.querySelectorAll('.section-nav-btn:not(.section-nav-add)').forEach(b => b.classList.remove('active'));
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  if (navWords) {
+    navWords.addEventListener('click', () => {
+      setActiveNav(navWords);
+      wordsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+  if (navTrends) {
+    navTrends.addEventListener('click', () => {
+      setActiveNav(navTrends);
+      trendsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+  if (navAddWord) {
+    navAddWord.addEventListener('click', () => {
+      inputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => {
+        const wordInput = document.getElementById('wordInput');
+        if (wordInput) wordInput.focus();
+      }, 400);
+    });
+  }
+
+  // Update active nav on scroll
+  const navObserverOptions = { rootMargin: '-40% 0px -50% 0px' };
+  const navObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        if (entry.target.id === 'wordsSection') setActiveNav(navWords);
+        else if (entry.target.id === 'trendsSection') setActiveNav(navTrends);
+      }
+    });
+  }, navObserverOptions);
+  if (wordsSection) navObserver.observe(wordsSection);
+  if (trendsSection) navObserver.observe(trendsSection);
+
+  // --- Timeline Load More ---
+  const loadMoreBtn = document.getElementById('timelineLoadMoreBtn');
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', () => {
+      const filtered = getFilteredWords();
+      const total = filtered.length;
+      if (timelineDisplayCount + TIMELINE_PAGE_SIZE >= total) {
+        timelineDisplayCount = total;
+      } else {
+        timelineDisplayCount += TIMELINE_PAGE_SIZE;
+      }
+      renderTimeline();
     });
   }
 });
