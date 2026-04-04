@@ -67,9 +67,10 @@
 - `Karantina` - Word display text (playful, large)
 
 ### Section Navigation
-- Sticky nav bar between input section and words section
-- Two section tabs: "אוצר מילים" (words) and "מגמות" (trends)
-- "+ הוסיפו מילה" button scrolls to input and focuses it
+- Sticky nav bar INSIDE the words section (not above it)
+- Contains two rows: section tabs (אוצר מילים/מגמות + הוסיפו מילה) and view toggle (רשת/ציר זמן)
+- Sticks to top of viewport when scrolling through words/trends sections
+- Buttons are large and centered for mobile accessibility
 - Active tab updates automatically on scroll via IntersectionObserver
 - Uses backdrop-filter blur for glassmorphism effect
 
