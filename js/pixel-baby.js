@@ -4,18 +4,19 @@
 (function() {
   'use strict';
 
-  var PX = 4; // pixels per sprite-pixel
+  var PX = 4;
 
   // Color palette
   var C = {
     '.': null,
-    'H': '#D4884A', // hair blonde-reddish
-    'h': '#B8703A', // hair darker
+    'H': '#DAA54A', // hair golden blonde
+    'h': '#C09038', // hair darker
     'S': '#FDDCB5', // skin
     's': '#EDB78E', // skin shadow
     'E': '#2D1B69', // eye
     'e': '#FFFFFF', // eye highlight
-    'M': '#FF6B9D', // blush / mouth
+    'M': '#FF8FA0', // blush
+    'L': '#E85A7A', // lips / mouth
     'P': '#FFB0C8', // dress pink
     'p': '#FF8FAF', // dress pink darker
     'W': '#FFFFFF', // white dots on dress
@@ -23,111 +24,102 @@
   };
 
   // ==========================================
-  // SPRITE DATA  (all 12 chars wide)
+  // SPRITE DATA  (all rows 12 chars wide)
+  // Eyes closer, small ponytail, visible smile
   // ==========================================
 
   var IDLE = [
-    '.....HH.....',
-    '....HHHH....',
-    '....hHHh....',
-    '...HHHHHH...',
-    '..HHHHHHHH..',
-    '..HhSSSSHH..',
-    '..HSSSSSSH..',
-    '..SEeSSSeE..',
-    '..SSSSSSSS..',
-    '..SMSSSSMs..',
-    '...SSMMSS...',
-    '....SSSS....',
-    '.....PP.....',
-    '...pPPPPp...',
-    '..SpPWPWpS..',
-    '..SpPPPPpS..',
-    '...pPPPPp...',
-    '....SS.SS...',
-    '....RR.RR...',
+    '.....HH.....',  // 0  ponytail (small, close to scalp)
+    '....hHHh....',  // 1  ponytail base
+    '...HHHHHH...',  // 2  hair top
+    '..HHHHHHHH..',  // 3  hair full
+    '..HhSSSSHh..',  // 4  forehead
+    '..HSSSSSSH..',  // 5  face
+    '..SSEeSeES..',  // 6  eyes (close together)
+    '..SSSSSSSS..',  // 7  nose
+    '..SMSSSSMS..',  // 8  blush cheeks
+    '....SLLS....',  // 9  smile
+    '....SSSS....',  // 10 chin
+    '...pPPPPp...',  // 11 dress top
+    '..SpPWPWpS..',  // 12 dress+arms+dots
+    '..SpPPPPpS..',  // 13 dress+arms
+    '...pPPPPp...',  // 14 dress bottom
+    '....SS.SS...',  // 15 legs
+    '....RR.RR...',  // 16 shoes
   ];
 
   var WAVE1 = [
     '.....HH.....',
-    '....HHHH....',
     '....hHHh....',
     '...HHHHHH...',
     '..HHHHHHHH..',
-    '..HhSSSSHH..',
+    '..HhSSSSHh..',
     '..HSSSSSSH..',
-    '..SEeSSSeE..',
+    '..SSEeSeES..',
     '..SSSSSSSS..',
-    '..SMSSSSMs..',
-    '...SSMMSS...',
-    '....SSSS.S..',
-    '.....PP..S..',
-    '...pPPPPpS..',
-    '..SpPWPWp...',
-    '..SpPPPPp...',
-    '...pPPPPp...',
+    '..SMSSSSMS..',
+    '....SLLS....',
+    '....SSSS.S..',  // 10 hand at col 9
+    '...pPPPPpS..',  // 11 arm at col 9
+    '..SpPWPWp...',  // 12 left arm only
+    '..SpPPPPp...',  // 13
+    '...pPPPPp...',  // 14
     '....SS.SS...',
     '....RR.RR...',
   ];
 
   var WAVE2 = [
     '.....HH.....',
-    '....HHHH....',
     '....hHHh....',
     '...HHHHHH...',
     '..HHHHHHHH..',
-    '..HhSSSSHH..',
+    '..HhSSSSHh..',
     '..HSSSSSSH..',
-    '..SEeSSSeE..',
+    '..SSEeSeES..',
     '..SSSSSSSS..',
-    '..SMSSSSMs..',
-    '...SSMMSS.S.',
-    '....SSSS.S..',
-    '.....PP..S..',
-    '...pPPPPp...',
-    '..SpPWPWp...',
-    '..SpPPPPp...',
-    '...pPPPPp...',
+    '..SMSSSSMS..',
+    '....SLLS..S.',  // 9  hand higher at col 10
+    '....SSSS.S..',  // 10 arm at col 9
+    '...pPPPPpS..',  // 11 arm connects
+    '..SpPWPWp...',  // 12
+    '..SpPPPPp...',  // 13
+    '...pPPPPp...',  // 14
     '....SS.SS...',
     '....RR.RR...',
   ];
 
   var SIT = [
     '.....HH.....',
-    '....HHHH....',
     '....hHHh....',
     '...HHHHHH...',
     '..HHHHHHHH..',
-    '..HhSSSSHH..',
+    '..HhSSSSHh..',
     '..HSSSSSSH..',
-    '..SEeSSSeE..',
+    '..SSEeSeES..',
     '..SSSSSSSS..',
-    '..SMSSSSMs..',
-    '...SSMMSS...',
+    '..SMSSSSMS..',
+    '....SLLS....',
     '....SSSS....',
     '...pPPPPp...',
     '..SpPWPWpS..',
-    '..SpPPPPpS..',
-    '..SSSSSSSS..',
-    '..RR....RR..',
+    '..SSSSSSSS..',  // legs forward (sitting)
+    '..RR....RR..',  // shoes
   ];
 
   var JUMP = [
     '.....HH.....',
-    '....HHHH....',
     '....hHHh....',
     '...HHHHHH...',
     '..HHHHHHHH..',
-    '..HhSSSSHH..',
+    '..HhSSSSHh..',
     '..HSSSSSSH..',
-    '..SEeSSSeE..',
+    '..SSEeSeES..',
     '..SSSSSSSS..',
-    '..SMSSSSMs..',
-    '...SSMMSS...',
-    'S...SSSS...S',
-    '.S...PP...S.',
-    '..pPPPPPp...',
-    '..pPWPPWp...',
+    '..SMSSSSMS..',
+    '....SLLS....',
+    'S...SSSS...S',  // arms spread
+    '.S.pPPPPp.S.',
+    '..pPPWPWp...',
     '..pPPPPPp...',
     '...pPPPp....',
     '....S..S....',
@@ -141,14 +133,14 @@
   // ==========================================
 
   function renderToCanvas(canvas, sprite, scale) {
-    var rows = sprite.length;
     var cols = sprite[0].length;
+    var rows = sprite.length;
     canvas.width = cols * scale;
     canvas.height = rows * scale;
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (var y = 0; y < rows; y++) {
-      for (var x = 0; x < sprite[y].length; x++) {
+      for (var x = 0; x < cols; x++) {
         var color = C[sprite[y][x]];
         if (color) {
           ctx.fillStyle = color;
@@ -181,7 +173,6 @@
     span.className = 'pbaby-bubble-text';
     span.textContent = text;
     el.appendChild(span);
-    // triangle tail
     var tail = document.createElement('div');
     tail.className = 'pbaby-bubble-tail';
     el.appendChild(tail);
@@ -200,13 +191,14 @@
   }
 
   // ==========================================
-  // 1. PEEK-A-BOO  (input card corner)
+  // 1. PEEK-A-BOO  (input card left side)
+  //    Baby peeks from behind the left edge
+  //    of the input card diagonally
   // ==========================================
 
   function initPeekaboo() {
     var inputContainer = document.querySelector('.input-container');
-    var markerArea = document.querySelector('.marker-area');
-    if (!inputContainer || !markerArea) return;
+    if (!inputContainer) return;
 
     var container = document.createElement('div');
     container.className = 'pbaby-peek';
@@ -219,30 +211,31 @@
 
     inputContainer.appendChild(container);
 
-    // Loop
     (async function loop() {
       while (true) {
-        await wait(4000);
+        await wait(3500);
         if (!inView(inputContainer)) { await wait(2000); continue; }
 
-        // peek in
+        // slide out from behind card
         container.classList.add('in');
-        await wait(700);
+        await wait(800);
 
         // wave
         for (var i = 0; i < 6; i++) {
           setSprite(canvas, i % 2 === 0 ? 'wave1' : 'wave2', PX);
-          await wait(250);
+          await wait(280);
         }
         setSprite(canvas, 'idle', PX);
 
-        // bubble
+        // show bubble
         bubble.classList.add('show');
-        await wait(2200);
-        bubble.classList.remove('show');
-        await wait(400);
+        await wait(2500);
 
-        // peek out
+        // hide bubble
+        bubble.classList.remove('show');
+        await wait(500);
+
+        // slide back behind card
         container.classList.remove('in');
         await wait(5000);
       }
@@ -275,7 +268,7 @@
     var wrapper = document.createElement('div');
     wrapper.className = 'pbaby-click-wrap';
 
-    // popup area
+    // popup
     var popup = document.createElement('div');
     popup.className = 'pbaby-click-popup';
 
@@ -295,7 +288,7 @@
     var faceCanvas = document.createElement('canvas');
     faceCanvas.style.imageRendering = 'pixelated';
     faceCanvas.style.display = 'block';
-    renderToCanvas(faceCanvas, IDLE.slice(0, 12), 3);
+    renderToCanvas(faceCanvas, IDLE.slice(0, 11), 3);
     btn.appendChild(faceCanvas);
 
     wrapper.appendChild(btn);
@@ -307,7 +300,7 @@
       busy = true;
 
       popup.classList.add('show');
-      await wait(400);
+      await wait(350);
 
       // jump
       setSprite(popupCanvas, 'jump', PX);
@@ -318,7 +311,7 @@
       // wave
       for (var i = 0; i < 4; i++) {
         setSprite(popupCanvas, i % 2 === 0 ? 'wave1' : 'wave2', PX);
-        await wait(250);
+        await wait(280);
       }
       setSprite(popupCanvas, 'idle', PX);
 
@@ -327,93 +320,21 @@
       await wait(2500);
 
       popupBubble.classList.remove('show');
-      await wait(300);
+      await wait(350);
       popup.classList.remove('show');
-
       busy = false;
     });
   }
 
   // ==========================================
-  // 4. TRENDS SECTION BABY
-  // ==========================================
-
-  function initTrendsBaby() {
-    var section = document.querySelector('.trends-section');
-    if (!section) return;
-
-    var container = document.createElement('div');
-    container.className = 'pbaby-trends';
-
-    var canvas = createSprite('idle', 3);
-    container.appendChild(canvas);
-
-    var bubble = createBubble('גדלתי!', 'pbaby-trends-bubble');
-    container.appendChild(bubble);
-
-    section.style.position = 'relative';
-    section.style.overflow = 'visible';
-    section.appendChild(container);
-
-    var animating = false;
-
-    var obs = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting && !animating) {
-          animating = true;
-          (async function() {
-            await wait(600);
-            container.classList.add('show');
-            await wait(800);
-            for (var i = 0; i < 4; i++) {
-              setSprite(canvas, i % 2 === 0 ? 'wave1' : 'wave2', 3);
-              await wait(250);
-            }
-            setSprite(canvas, 'idle', 3);
-            bubble.classList.add('show');
-            await wait(2500);
-            bubble.classList.remove('show');
-            await wait(500);
-            container.classList.remove('show');
-            await wait(8000);
-            animating = false;
-          })();
-        }
-      });
-    }, { threshold: 0.3 });
-    obs.observe(section);
-  }
-
-  // ==========================================
-  // 5. FOOTER BABY (walking bounce)
-  // ==========================================
-
-  function initFooterBaby() {
-    var footer = document.querySelector('.main-footer');
-    if (!footer) return;
-
-    var container = document.createElement('div');
-    container.className = 'pbaby-footer';
-
-    var canvas = createSprite('idle', 2);
-    container.appendChild(canvas);
-
-    footer.style.position = 'relative';
-    footer.style.overflow = 'visible';
-    footer.appendChild(container);
-  }
-
-  // ==========================================
-  // 6. WORDS SECTION - sitting on title letter
+  // 4. WORDS TITLE - sitting on title
   // ==========================================
 
   function initWordsTitleBaby() {
     var title = document.querySelector('.words-title');
     if (!title) return;
 
-    // wrap title in a relative container
     title.style.position = 'relative';
-    title.style.display = 'inline-block';
 
     var container = document.createElement('div');
     container.className = 'pbaby-words-title';
@@ -432,8 +353,6 @@
     initPeekaboo();
     initSittingBaby();
     initClickBaby();
-    initTrendsBaby();
-    initFooterBaby();
     initWordsTitleBaby();
   }
 
