@@ -193,7 +193,7 @@ const inputSection = $('#inputSection');
 const ageSection = $('#ageSection');
 const ageQuestion = $('#ageQuestion');
 const ageOptions = $('#ageOptions');
-
+const justNowBtn = $('#justNowBtn');
 const notesSection = $('#notesSection');
 const notesTitle = $('#notesTitle');
 const notesInput = $('#notesInput');
@@ -250,6 +250,7 @@ function setupEventListeners() {
     const months = getWheelCenterMonth(ageOptions);
     selectAge(months);
   });
+  justNowBtn.addEventListener('click', () => selectAge(calculateCurrentAgeMonths()));
 
   // Notes
   notesSkipBtn.addEventListener('click', () => saveNewWord(''));
