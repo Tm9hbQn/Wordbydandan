@@ -369,6 +369,13 @@ function setupEventListeners() {
     linkResults.classList.remove('hidden');
   });
 
+  linkSearchInput.addEventListener('focus', () => {
+    // Scroll the input into view so results aren't hidden behind mobile keyboard
+    setTimeout(() => {
+      linkSearchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  });
+
   linkSearchInput.addEventListener('blur', () => {
     // Longer delay for mobile to allow tap on results
     setTimeout(() => linkResults.classList.add('hidden'), 400);
@@ -752,7 +759,7 @@ function renderWords() {
       if (chain.length > 1) {
         const linkEl = document.createElement('div');
         linkEl.className = 'word-card-link';
-        linkEl.textContent = chain.map((c) => c.word).join(' → ');
+        linkEl.textContent = chain.map((c) => c.word).join(' ← ');
         linkEl.addEventListener('click', (e) => {
           e.stopPropagation();
           openEvoModal(w.id);
@@ -886,25 +893,49 @@ function openEditModal(word) {
   if (chain.length > 1) {
     viewEvoSection.classList.remove('hidden');
     viewEvoChain.innerHTML = '';
+
+    // Build horizontal mini-timeline for evolution chain
+    const evoTimeline = document.createElement('div');
+    evoTimeline.className = 'evo-mini-timeline';
+
     chain.forEach((w, i) => {
-      if (i > 0) {
-        const arrow = document.createElement('span');
-        arrow.className = 'view-evo-arrow';
-        arrow.textContent = '→';
-        viewEvoChain.appendChild(arrow);
-      }
-      const item = document.createElement('span');
-      item.className = 'view-evo-item' + (w.id === word.id ? ' evo-active' : '');
-      item.textContent = w.word;
-      item.addEventListener('click', () => {
+      // Word column with dot, word, and age
+      const col = document.createElement('div');
+      col.className = 'evo-mini-col' + (w.id === word.id ? ' evo-active' : '');
+      col.addEventListener('click', () => {
         const target = words.find((o) => o.id === w.id);
         if (target && target.id !== word.id) {
           closeEditModal();
           openEditModal(target);
         }
       });
-      viewEvoChain.appendChild(item);
+
+      const wordEl = document.createElement('div');
+      wordEl.className = 'evo-mini-word';
+      wordEl.textContent = w.word;
+
+      const dot = document.createElement('div');
+      dot.className = 'evo-mini-dot';
+
+      const ageEl = document.createElement('div');
+      ageEl.className = 'evo-mini-age';
+      ageEl.textContent = w.age_months !== null ? ageMonthsToHebrew(w.age_months) : '';
+
+      col.appendChild(wordEl);
+      col.appendChild(dot);
+      col.appendChild(ageEl);
+      evoTimeline.appendChild(col);
+
+      // Arrow between items (RTL: ← direction)
+      if (i < chain.length - 1) {
+        const arrow = document.createElement('div');
+        arrow.className = 'evo-mini-arrow';
+        arrow.textContent = '←';
+        evoTimeline.appendChild(arrow);
+      }
     });
+
+    viewEvoChain.appendChild(evoTimeline);
   } else {
     viewEvoSection.classList.add('hidden');
   }
@@ -1273,7 +1304,7 @@ function renderTimeline() {
       if (tlChain.length > 1) {
         const linkEl = document.createElement('div');
         linkEl.className = 'timeline-card-link';
-        linkEl.textContent = tlChain.map((c) => c.word).join(' → ');
+        linkEl.textContent = tlChain.map((c) => c.word).join(' ← ');
         linkEl.addEventListener('click', (e) => {
           e.stopPropagation();
           openEvoModal(w.id);

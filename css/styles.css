@@ -1065,36 +1065,99 @@ body {
 
 .view-evo-chain {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
   justify-content: center;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
 }
 
-.view-evo-item {
-  background: var(--lavender);
-  border-radius: 12px;
-  padding: 0.4rem 0.8rem;
-  font-family: 'Karantina', sans-serif;
-  font-size: 1.3rem;
-  color: var(--deep-purple);
+/* Evolution mini-timeline */
+.evo-mini-timeline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  direction: ltr;
+}
+
+.evo-mini-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s;
+  padding: 0 0.3rem;
+  min-width: 0;
 }
 
-.view-evo-item:hover {
-  background: var(--pink);
-  transform: scale(1.05);
+.evo-mini-col:hover {
+  transform: scale(1.06);
 }
 
-.view-evo-item.evo-active {
-  background: linear-gradient(135deg, var(--hot-pink), var(--soft-purple));
-  color: white;
+.evo-mini-word {
+  font-family: 'Karantina', sans-serif;
+  font-size: 1.25rem;
+  color: var(--deep-purple);
+  line-height: 1.2;
+  margin-bottom: 0.35rem;
+  white-space: nowrap;
+  direction: rtl;
 }
 
-.view-evo-arrow {
+.evo-mini-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--soft-purple);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(108,92,231,0.25);
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.evo-mini-col.evo-active .evo-mini-dot {
+  background: var(--hot-pink);
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 1px 6px rgba(255,107,157,0.4);
+}
+
+.evo-mini-col.evo-active .evo-mini-word {
+  color: var(--hot-pink);
+  font-weight: 700;
+}
+
+.evo-mini-age {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.65rem;
   color: var(--soft-purple);
-  font-size: 0.9rem;
+  margin-top: 0.35rem;
+  white-space: nowrap;
+  direction: rtl;
+}
+
+.evo-mini-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--soft-purple);
+  font-size: 0.85rem;
+  opacity: 0.5;
+  padding: 0 0.15rem;
+  margin-top: -1.2rem;
+  position: relative;
+}
+
+/* Horizontal connecting line behind dots - drawn via JS-positioned absolute,
+   but we use a simple border approach on the arrow instead */
+.evo-mini-arrow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  right: -2px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--soft-purple), var(--hot-pink));
+  opacity: 0.2;
+  z-index: 0;
 }
 
 .modal-edit-btn {
