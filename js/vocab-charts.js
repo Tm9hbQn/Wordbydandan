@@ -54,20 +54,6 @@
     'clothing', 'toys', 'household', 'outside'
   ];
 
-  var SUB_COLORS = {
-    people: '#FF6B9D', animals: '#6C5CE7', food: '#FFD93D',
-    clothing: '#4ECDC4', household: '#FF8A80', nature: '#81C784',
-    toys: '#CE93D8', verbs: '#4DD0E1', adjectives: '#FFB74D',
-    social: '#F48FB1', body_function: '#B0BEC5', eating: '#FFF176',
-    unclear: '#CFD8DC',
-  };
-  var SUB_LABELS = {
-    people: 'אנשים', animals: 'חיות', food: 'אוכל',
-    clothing: 'לבוש', household: 'בית', nature: 'טבע',
-    toys: 'צעצועים', verbs: 'פעלים', adjectives: 'תארים',
-    social: 'חברתי', body_function: 'גוף', eating: 'אכילה',
-    unclear: 'לא ברור',
-  };
 
   // Baby's current age
   var BABY_MAX_AGE = 16; // months (as of April 2026)
@@ -89,15 +75,6 @@
     return cats;
   }
 
-  function getSubCategories(words) {
-    var subs = {};
-    words.forEach(function (w) {
-      if (w.sub_category === 'unclear') return;
-      if (!subs[w.sub_category]) subs[w.sub_category] = [];
-      subs[w.sub_category].push(w);
-    });
-    return subs;
-  }
 
   function getAgeRange() {
     if (!vocabData.length) return { min: 10, max: BABY_MAX_AGE };
@@ -476,7 +453,7 @@
   }
 
   // ==========================================
-  // CHART 3: BUBBLE MAP (sub-categories)
+  // CHART 3: BUBBLE MAP (CDI main categories)
   // ==========================================
   function drawBubbleMap(canvasId, maxAge) {
     var canvas = document.getElementById(canvasId);
@@ -493,9 +470,9 @@
     ctx.clearRect(0, 0, W, H);
 
     var words = getWordsUpTo(maxAge);
-    var subs = getSubCategories(words);
-    var entries = Object.keys(subs).map(function (k) {
-      return { key: k, count: subs[k].length, words: subs[k] };
+    var cats = getCategories(words);
+    var entries = Object.keys(cats).map(function (k) {
+      return { key: k, count: cats[k].length, words: cats[k] };
     }).sort(function (a, b) { return b.count - a.count; });
 
     if (!entries.length) return;
@@ -518,7 +495,7 @@
 
     // Draw bubbles
     placed.forEach(function (b) {
-      var color = SUB_COLORS[b.entry.key] || '#ccc';
+      var color = CAT_COLORS[b.entry.key] || '#ccc';
       // Glow
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.r + 4, 0, Math.PI * 2);
@@ -540,7 +517,7 @@
       ctx.fillStyle = COLORS.deepPurple;
       ctx.font = 'bold ' + (b.r > 30 ? '13' : '10') + 'px Secular One, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(SUB_LABELS[b.entry.key] || b.entry.key, b.x, b.y - 3);
+      ctx.fillText(CAT_LABELS[b.entry.key] || b.entry.key, b.x, b.y - 3);
       ctx.font = 'bold ' + (b.r > 30 ? '16' : '12') + 'px Secular One, sans-serif';
       ctx.fillStyle = COLORS.purple;
       ctx.fillText(b.entry.count, b.x, b.y + 14);
@@ -591,10 +568,8 @@
     var catLegend = activeCats.map(function (k) {
       return { color: CAT_COLORS[k], label: CAT_LABELS[k] };
     });
-    var subLegend = Object.keys(SUB_COLORS).filter(function (k) {
-      return k !== 'unclear';
-    }).map(function (k) {
-      return { color: SUB_COLORS[k], label: SUB_LABELS[k] };
+    var bubbleLegend = activeCats.map(function (k) {
+      return { color: CAT_COLORS[k], label: CAT_LABELS[k] };
     });
 
     // Card 1: Stacked bars (category evolution)
@@ -615,7 +590,7 @@
     var c3 = createCard('מפת תשומת הלב', 'vchart3');
     container.appendChild(c3);
     setupSlider('vchart3', range, function (age) { drawBubbleMap('vchart3', age); });
-    buildLegend('vchart3', subLegend);
+    buildLegend('vchart3', bubbleLegend);
   }
 
   if (document.readyState === 'loading') {

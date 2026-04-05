@@ -22,7 +22,7 @@
   {"id":21,"word":"אריה","target_meaning":"אריה","age_in_months":15,"cdi_category":"animals","sub_category":"animals","notes":"התפתחות משאגה וווואההה"},
   {"id":22,"word":"(ענ)בל","target_meaning":"ענבל","age_in_months":15,"cdi_category":"people","sub_category":"people","notes":"דודה ענבל"},
   {"id":23,"word":"חיתול","target_meaning":"חיתול","age_in_months":15,"cdi_category":"clothing","sub_category":"clothing","notes":""},
-  {"id":24,"word":"טי (טיול)","target_meaning":"טיול","age_in_months":15,"cdi_category":"action_words","sub_category":"verbs","notes":"התינוקת והנעליים"},
+  {"id":24,"word":"טי (טיול)","target_meaning":"טיול","age_in_months":15,"cdi_category":"games_routines","sub_category":"social","notes":"התינוקת והנעליים"},
   {"id":25,"word":"עוף","target_meaning":"עוף","age_in_months":15,"cdi_category":"animals","sub_category":"animals","notes":""},
   {"id":26,"word":"בל (בלון)","target_meaning":"בלון","age_in_months":15,"cdi_category":"toys","sub_category":"toys","notes":""},
   {"id":27,"word":"כככ.. (כרית)","target_meaning":"כרית","age_in_months":15,"cdi_category":"household","sub_category":"household","notes":""},
