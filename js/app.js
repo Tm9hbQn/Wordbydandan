@@ -393,9 +393,15 @@ function setupEventListeners() {
   });
 
   // Search
+  let preSearchView = null;
   searchInput.addEventListener('input', () => {
     searchQuery = searchInput.value.trim();
     searchClear.classList.toggle('hidden', !searchQuery);
+    // Switch to grid view when searching (remember previous view)
+    if (searchQuery && currentView !== 'grid') {
+      preSearchView = currentView;
+      switchView('grid');
+    }
     renderWords();
     // Keep search + results visible above keyboard on mobile
     if (searchQuery) {
@@ -408,6 +414,11 @@ function setupEventListeners() {
     searchInput.value = '';
     searchQuery = '';
     searchClear.classList.add('hidden');
+    // Restore previous view
+    if (preSearchView) {
+      switchView(preSearchView);
+      preSearchView = null;
+    }
     renderWords();
   });
 
@@ -462,12 +473,82 @@ function onWordBlur() {
 }
 
 /* ===== Submit Word Flow ===== */
+let currentLinkedTo = null; // Track linked word for new word
+
 function submitWord() {
   if (submitting) return;
   const text = wordInput.value.trim();
   if (!text) return;
-  submitting = true;
 
+  currentLinkedTo = null;
+
+  // Check for similar existing words
+  const similar = findSimilarWords(text);
+  if (similar.length > 0) {
+    showDuplicateWarning(text, similar);
+    return;
+  }
+
+  proceedWithSubmit(text);
+}
+
+function showDuplicateWarning(text, similar) {
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'dup-overlay';
+  overlay.innerHTML = `
+    <div class="dup-modal">
+      <h3 class="dup-title">נמצאו מילים דומות</h3>
+      <p class="dup-subtitle">התכוונתם לאחת מאלו?</p>
+      <div class="dup-list">
+        ${similar.map(w => `
+          <button class="dup-item" data-id="${w.id}">
+            <span class="dup-item-word">${w.word}</span>
+            <span class="dup-item-age">${w.age_months !== null ? ageMonthsToHebrew(w.age_months) : ''}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="dup-actions">
+        <button class="dup-btn-no">לא, להוסיף "${text}" כמילה חדשה</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('visible'));
+
+  // Clicking a similar word -> open its edit modal, cancel add
+  overlay.querySelectorAll('.dup-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const w = words.find(w => w.id === id);
+      closeDupOverlay(overlay);
+      if (w) openEditModal(w);
+      wordInput.value = '';
+    });
+  });
+
+  // "No" -> proceed with adding new word
+  overlay.querySelector('.dup-btn-no').addEventListener('click', () => {
+    closeDupOverlay(overlay);
+    proceedWithSubmit(text);
+  });
+
+  // Clicking overlay bg closes it
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closeDupOverlay(overlay);
+    }
+  });
+}
+
+function closeDupOverlay(overlay) {
+  overlay.classList.remove('visible');
+  setTimeout(() => overlay.remove(), 300);
+}
+
+function proceedWithSubmit(text) {
+  submitting = true;
   currentWord = text;
 
   // Swish out input section
@@ -510,7 +591,59 @@ function selectAge(months) {
     notesInput.textContent = '';
     notesSection.classList.remove('hidden');
     notesSection.querySelector('.notes-container').classList.add('fade-in');
+
+    // Setup link toggle
+    setupLinkToggle();
   }, 400);
+}
+
+function setupLinkToggle() {
+  currentLinkedTo = null;
+  // Remove any previous link area
+  const existing = document.getElementById('linkArea');
+  if (existing) existing.remove();
+
+  const container = notesSection.querySelector('.notes-container');
+  const actions = container.querySelector('.notes-actions');
+
+  const linkArea = document.createElement('div');
+  linkArea.id = 'linkArea';
+  linkArea.className = 'link-area';
+
+  linkArea.innerHTML = `
+    <label class="link-toggle">
+      <input type="checkbox" id="linkCheckbox">
+      <span class="link-toggle-label">מילה מקושרת (התפתחות של מילה קיימת)</span>
+    </label>
+    <div class="link-select-area hidden" id="linkSelectArea">
+      <select class="link-select" id="linkSelect">
+        <option value="">בחרו את המילה המקורית...</option>
+        ${words
+          .filter(w => !w.linked_to)
+          .sort((a, b) => (b.age_months ?? 0) - (a.age_months ?? 0))
+          .map(w => `<option value="${w.id}">${w.word} (${w.age_months !== null ? ageMonthsToHebrew(w.age_months) : '?'})</option>`)
+          .join('')}
+      </select>
+    </div>
+  `;
+
+  container.insertBefore(linkArea, actions);
+
+  const checkbox = document.getElementById('linkCheckbox');
+  const selectArea = document.getElementById('linkSelectArea');
+  const select = document.getElementById('linkSelect');
+
+  checkbox.addEventListener('change', () => {
+    selectArea.classList.toggle('hidden', !checkbox.checked);
+    if (!checkbox.checked) {
+      currentLinkedTo = null;
+      select.value = '';
+    }
+  });
+
+  select.addEventListener('change', () => {
+    currentLinkedTo = select.value || null;
+  });
 }
 
 async function saveNewWord(notes) {
@@ -522,11 +655,15 @@ async function saveNewWord(notes) {
     container.classList.remove('fade-out', 'fade-in');
 
     try {
-      await insertWord({
+      const wordData = {
         word: currentWord,
         age_months: currentAgeMonths,
         notes: notes || null,
-      });
+      };
+      if (currentLinkedTo) {
+        wordData.linked_to = currentLinkedTo;
+      }
+      await insertWord(wordData);
 
       showSuccess(`"${currentWord}" נוספה! 🌟`);
       await loadWords();
@@ -668,10 +805,8 @@ function fuzzyMatch(query, text) {
   if (query.length >= 2 && text.length >= 2) {
     const maxDist = query.length <= 3 ? 1 : 2;
     if (levenshtein(query, text) <= maxDist) return true;
-    // Also check each word in notes
   }
 
-  // Check if query is a subsequence with at most 1 skip
   return false;
 }
 
@@ -700,9 +835,63 @@ function levenshtein(a, b) {
   return dp[m];
 }
 
+// Score how well a word matches the query (lower = better match)
+function searchRelevanceScore(query, wordObj) {
+  if (!query) return 0;
+  const q = query.toLowerCase();
+  const w = wordObj.word.toLowerCase();
+
+  // Exact match on word field
+  if (w === q) return 0;
+  // Word starts with query
+  if (w.startsWith(q)) return 1;
+  // Exact substring in word
+  if (w.includes(q)) return 2;
+  // Levenshtein on word
+  const dist = levenshtein(q, w);
+  if (dist <= 1) return 3;
+  if (dist <= 2) return 4;
+  // Match in notes
+  if (wordObj.notes && wordObj.notes.toLowerCase().includes(q)) return 5;
+  // Fuzzy match
+  return 6 + dist;
+}
+
+function isExactMatch(query, wordObj) {
+  if (!query) return false;
+  const q = query.toLowerCase();
+  return wordObj.word.toLowerCase() === q ||
+    wordObj.word.toLowerCase().includes('(' + q + ')') ||
+    wordObj.word.toLowerCase().includes(q + ')');
+}
+
 function getFilteredWords() {
   if (!searchQuery) return words;
-  return words.filter((w) => fuzzyMatchWord(searchQuery, w));
+  const filtered = words.filter((w) => fuzzyMatchWord(searchQuery, w));
+  // Sort by relevance: best match first
+  filtered.sort((a, b) => searchRelevanceScore(searchQuery, a) - searchRelevanceScore(searchQuery, b));
+  return filtered;
+}
+
+// Find similar words to a given text (for duplicate detection)
+function findSimilarWords(text) {
+  if (!text || text.length < 2) return [];
+  const q = text.toLowerCase();
+  return words
+    .filter(w => {
+      const wl = w.word.toLowerCase();
+      // Exact match
+      if (wl === q) return true;
+      // Very close levenshtein
+      if (levenshtein(q, wl) <= 1) return true;
+      // Check if word contains the text in parentheses (target meaning)
+      const parenMatch = wl.match(/\(([^)]+)\)/);
+      if (parenMatch && levenshtein(q, parenMatch[1]) <= 1) return true;
+      // Short words: substring match
+      if (q.length >= 2 && (wl.includes(q) || q.includes(wl))) return true;
+      return false;
+    })
+    .slice(0, 5);
 }
 
 /* ===== Load & Render Words ===== */
@@ -739,6 +928,9 @@ function renderWords() {
   filtered.forEach((w, i) => {
     const card = document.createElement('div');
     card.className = 'word-card reveal-on-scroll';
+    if (searchQuery && isExactMatch(searchQuery, w)) {
+      card.classList.add('exact-match-glow');
+    }
     card.style.setProperty('--reveal-delay', `${Math.min(i * 0.06, 0.5)}s`);
     card.addEventListener('click', () => openEditModal(w));
 

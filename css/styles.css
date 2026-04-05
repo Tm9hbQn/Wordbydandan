@@ -2232,6 +2232,172 @@ body {
   flex-shrink: 0;
 }
 
+/* ===== Exact Match Glow ===== */
+@keyframes exactMatchPulse {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(255, 107, 157, 0.3), var(--card-shadow); }
+  50% { box-shadow: 0 0 18px 6px rgba(255, 107, 157, 0.5), var(--card-shadow); }
+}
+
+.word-card.exact-match-glow {
+  animation: exactMatchPulse 2s ease-in-out infinite;
+  border: 2px solid var(--hot-pink);
+}
+
+/* ===== Duplicate Warning Modal ===== */
+.dup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 27, 105, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.dup-overlay.visible {
+  opacity: 1;
+}
+
+.dup-modal {
+  background: white;
+  border-radius: 24px;
+  padding: 1.5rem;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(45, 27, 105, 0.3);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.dup-overlay.visible .dup-modal {
+  transform: scale(1);
+}
+
+.dup-title {
+  font-family: 'Secular One', sans-serif;
+  color: var(--deep-purple);
+  text-align: center;
+  margin-bottom: 0.2rem;
+  font-size: 1.1rem;
+}
+
+.dup-subtitle {
+  font-family: 'Varela Round', sans-serif;
+  color: var(--soft-purple);
+  text-align: center;
+  font-size: 0.85rem;
+  margin-bottom: 0.8rem;
+}
+
+.dup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.dup-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--lavender);
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Varela Round', sans-serif;
+}
+
+.dup-item:hover, .dup-item:active {
+  border-color: var(--soft-purple);
+  background: white;
+}
+
+.dup-item-word {
+  font-family: 'Karantina', sans-serif;
+  font-size: 1.3rem;
+  color: var(--deep-purple);
+}
+
+.dup-item-age {
+  font-size: 0.75rem;
+  color: var(--soft-purple);
+}
+
+.dup-actions {
+  text-align: center;
+}
+
+.dup-btn-no {
+  background: none;
+  border: 2px solid var(--lavender);
+  border-radius: 14px;
+  padding: 0.5rem 1rem;
+  color: var(--soft-purple);
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.dup-btn-no:hover {
+  border-color: var(--hot-pink);
+  color: var(--hot-pink);
+}
+
+/* ===== Link Toggle in Notes ===== */
+.link-area {
+  margin-top: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+
+.link-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.8rem;
+  color: var(--soft-purple);
+}
+
+.link-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--hot-pink);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.link-select-area {
+  margin-top: 0.5rem;
+}
+
+.link-select {
+  width: 100%;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.85rem;
+  color: var(--deep-purple);
+  background: white;
+  border: 2px solid var(--lavender);
+  border-radius: 12px;
+  padding: 0.5rem 0.6rem;
+  direction: rtl;
+  outline: none;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.link-select:focus {
+  border-color: var(--hot-pink);
+}
+
 /* ===== Period Comparison Card ===== */
 .comp-selectors {
   display: flex;
