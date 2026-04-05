@@ -232,6 +232,8 @@ const searchClear = $('#searchClear');
 
 let currentView = 'timeline';
 let searchQuery = '';
+let viewBeforeSearch = null; // remembers view before search auto-switched to grid
+let addFlowLinkedTo = null; // linked_to for the add-word flow
 
 /* ===== Initialize ===== */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -392,12 +394,19 @@ function setupEventListeners() {
     updateLinkUI();
   });
 
-  // Search
+  // Search - auto-switch to grid, relevance sorting
   searchInput.addEventListener('input', () => {
     searchQuery = searchInput.value.trim();
     searchClear.classList.toggle('hidden', !searchQuery);
+    if (searchQuery && viewBeforeSearch === null) {
+      viewBeforeSearch = currentView;
+      if (currentView !== 'grid') switchView('grid');
+    }
+    if (!searchQuery && viewBeforeSearch !== null) {
+      switchView(viewBeforeSearch);
+      viewBeforeSearch = null;
+    }
     renderWords();
-    // Keep search + results visible above keyboard on mobile
     if (searchQuery) {
       setTimeout(() => {
         searchInput.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -408,6 +417,10 @@ function setupEventListeners() {
     searchInput.value = '';
     searchQuery = '';
     searchClear.classList.add('hidden');
+    if (viewBeforeSearch !== null) {
+      switchView(viewBeforeSearch);
+      viewBeforeSearch = null;
+    }
     renderWords();
   });
 
@@ -461,12 +474,80 @@ function onWordBlur() {
   document.body.classList.remove('input-focused');
 }
 
+/* ===== Duplicate Detection ===== */
+function findSimilarWords(text) {
+  const q = text.toLowerCase();
+  return words.filter((w) => {
+    const wl = w.word.toLowerCase();
+    if (wl === q) return true;
+    if (wl.includes(q) || q.includes(wl)) return true;
+    if (q.length >= 2 && wl.length >= 2 && levenshtein(q, wl) <= (q.length <= 3 ? 1 : 2)) return true;
+    return false;
+  }).slice(0, 5);
+}
+
+function showDuplicateModal(text, similar) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay duplicate-modal-overlay';
+    const content = document.createElement('div');
+    content.className = 'modal-content duplicate-modal-content';
+    content.innerHTML = `
+      <h3 class="modal-title">מילה דומה כבר קיימת 🤔</h3>
+      <p style="font-family:Varela Round,sans-serif;color:var(--deep-purple);margin-bottom:1rem;text-align:center;">
+        מצאנו מילים דומות ל-"<strong>${text}</strong>":
+      </p>
+      <div class="duplicate-list"></div>
+      <div class="duplicate-actions">
+        <button class="duplicate-continue-btn">להוסיף בכל זאת ✨</button>
+      </div>
+    `;
+    const list = content.querySelector('.duplicate-list');
+    similar.forEach((w) => {
+      const item = document.createElement('div');
+      item.className = 'duplicate-item';
+      item.innerHTML = `<span class="duplicate-word">${w.word}</span><span class="duplicate-age">${w.age_months !== null ? ageMonthsToHebrew(w.age_months) : ''}</span>`;
+      item.addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        document.body.style.overflow = '';
+        resolve('existing');
+      });
+      list.appendChild(item);
+    });
+    content.querySelector('.duplicate-continue-btn').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      document.body.style.overflow = '';
+      resolve('continue');
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+        document.body.style.overflow = '';
+        resolve('cancel');
+      }
+    });
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+  });
+}
+
 /* ===== Submit Word Flow ===== */
-function submitWord() {
+async function submitWord() {
   if (submitting) return;
   const text = wordInput.value.trim();
   if (!text) return;
   submitting = true;
+
+  // Check for duplicates
+  const similar = findSimilarWords(text);
+  if (similar.length > 0) {
+    const result = await showDuplicateModal(text, similar);
+    if (result === 'cancel' || result === 'existing') {
+      submitting = false;
+      return;
+    }
+  }
 
   currentWord = text;
 
@@ -508,9 +589,43 @@ function selectAge(months) {
     // Show notes
     notesTitle.textContent = `רוצים להוסיף הקשר ל"${currentWord}"? 📝`;
     notesInput.textContent = '';
+    addFlowLinkedTo = null;
+    setupAddFlowLinking();
     notesSection.classList.remove('hidden');
     notesSection.querySelector('.notes-container').classList.add('fade-in');
   }, 400);
+}
+
+function setupAddFlowLinking() {
+  const linkWrap = document.getElementById('addFlowLinkWrap');
+  const checkbox = document.getElementById('addFlowLinkCheckbox');
+  const dropdown = document.getElementById('addFlowLinkDropdown');
+  if (!linkWrap || !checkbox || !dropdown) return;
+
+  checkbox.checked = false;
+  dropdown.classList.add('hidden');
+  dropdown.innerHTML = '';
+  addFlowLinkedTo = null;
+
+  checkbox.onchange = () => {
+    if (checkbox.checked) {
+      dropdown.classList.remove('hidden');
+      // Populate dropdown with all existing words
+      dropdown.innerHTML = '<option value="">בחרו מילה...</option>';
+      words.forEach((w) => {
+        const opt = document.createElement('option');
+        opt.value = w.id;
+        opt.textContent = w.word + (w.age_months !== null ? ' (' + ageMonthsToHebrew(w.age_months) + ')' : '');
+        dropdown.appendChild(opt);
+      });
+    } else {
+      dropdown.classList.add('hidden');
+      addFlowLinkedTo = null;
+    }
+  };
+  dropdown.onchange = () => {
+    addFlowLinkedTo = dropdown.value || null;
+  };
 }
 
 async function saveNewWord(notes) {
@@ -522,11 +637,15 @@ async function saveNewWord(notes) {
     container.classList.remove('fade-out', 'fade-in');
 
     try {
-      await insertWord({
+      const wordData = {
         word: currentWord,
         age_months: currentAgeMonths,
         notes: notes || null,
-      });
+      };
+      if (addFlowLinkedTo) {
+        wordData.linked_to = addFlowLinkedTo;
+      }
+      await insertWord(wordData);
 
       showSuccess(`"${currentWord}" נוספה! 🌟`);
       await loadWords();
@@ -534,6 +653,7 @@ async function saveNewWord(notes) {
       console.error('Error saving word:', err);
       showSuccess('אופס, משהו השתבש 😅');
     } finally {
+      addFlowLinkedTo = null;
       resetInput();
     }
   }, 300);
@@ -700,9 +820,32 @@ function levenshtein(a, b) {
   return dp[m];
 }
 
+function getSearchRelevance(query, wordObj) {
+  if (!query) return { match: true, score: 0 };
+  const q = query.toLowerCase();
+  const w = wordObj.word.toLowerCase();
+  // Exact match
+  if (w === q) return { match: true, score: 4 };
+  // Starts with
+  if (w.startsWith(q)) return { match: true, score: 3 };
+  // Contains
+  if (w.includes(q)) return { match: true, score: 2 };
+  // Notes contain
+  if (wordObj.notes && wordObj.notes.toLowerCase().includes(q)) return { match: true, score: 1 };
+  // Fuzzy
+  if (fuzzyMatchWord(query, wordObj)) return { match: true, score: 0 };
+  return { match: false, score: -1 };
+}
+
 function getFilteredWords() {
   if (!searchQuery) return words;
-  return words.filter((w) => fuzzyMatchWord(searchQuery, w));
+  const results = [];
+  words.forEach((w) => {
+    const rel = getSearchRelevance(searchQuery, w);
+    if (rel.match) results.push({ word: w, score: rel.score });
+  });
+  results.sort((a, b) => b.score - a.score);
+  return results.map((r) => r.word);
 }
 
 /* ===== Load & Render Words ===== */
@@ -739,6 +882,9 @@ function renderWords() {
   filtered.forEach((w, i) => {
     const card = document.createElement('div');
     card.className = 'word-card reveal-on-scroll';
+    if (searchQuery && w.word.toLowerCase() === searchQuery.toLowerCase()) {
+      card.classList.add('word-card-exact-match');
+    }
     card.style.setProperty('--reveal-delay', `${Math.min(i * 0.06, 0.5)}s`);
     card.addEventListener('click', () => openEditModal(w));
 
