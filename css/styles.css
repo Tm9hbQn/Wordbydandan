@@ -2232,6 +2232,193 @@ body {
   flex-shrink: 0;
 }
 
+/* ===== Period Comparison Card ===== */
+.comp-selectors {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.comp-period {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.comp-label {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.75rem;
+  color: var(--soft-purple);
+}
+
+.comp-select {
+  font-family: 'Secular One', sans-serif;
+  font-size: 0.9rem;
+  color: var(--deep-purple);
+  background: var(--lavender);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  text-align: center;
+  direction: rtl;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.comp-select:focus {
+  border-color: var(--soft-purple);
+}
+
+.comp-arrow {
+  font-size: 1.3rem;
+  color: var(--hot-pink);
+  margin-top: 1rem;
+}
+
+.comp-toggle-row {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 1rem;
+}
+
+.comp-toggle-btn {
+  font-family: 'Secular One', sans-serif;
+  font-size: 0.85rem;
+  padding: 0.4rem 1.2rem;
+  border: 2px solid var(--lavender);
+  background: white;
+  color: var(--soft-purple);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.comp-toggle-btn:first-child {
+  border-radius: 0 12px 12px 0;
+  border-left: 1px solid var(--lavender);
+}
+
+.comp-toggle-btn:last-child {
+  border-radius: 12px 0 0 12px;
+  border-right: 1px solid var(--lavender);
+}
+
+.comp-toggle-btn.active {
+  background: linear-gradient(135deg, var(--soft-purple), var(--hot-pink));
+  color: white;
+  border-color: transparent;
+}
+
+.comp-chart-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.comp-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.comp-row-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: 'Secular One', sans-serif;
+  font-size: 0.75rem;
+  color: var(--deep-purple);
+  white-space: nowrap;
+}
+
+.comp-bars {
+  width: 100%;
+}
+
+.comp-bar-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.comp-bar-track {
+  height: 14px;
+  background: rgba(243, 229, 245, 0.4);
+  border-radius: 7px;
+  overflow: hidden;
+  position: relative;
+}
+
+.comp-bar {
+  height: 100%;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 6px;
+  width: 2%;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.comp-bar.animated {
+  width: var(--target-w, 2%);
+}
+
+.comp-bar-val {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.65rem;
+  color: white;
+  font-weight: bold;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.from-bar {
+  opacity: 0.45;
+}
+
+.comp-growth {
+  font-family: 'Secular One', sans-serif;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+  padding: 0.15rem 0.4rem;
+  border-radius: 8px;
+}
+
+.growth-up {
+  color: #2e7d32;
+  background: rgba(129, 199, 132, 0.2);
+}
+
+.growth-down {
+  color: #c62828;
+  background: rgba(255, 138, 128, 0.2);
+}
+
+.growth-same {
+  color: var(--soft-purple);
+  background: rgba(243, 229, 245, 0.4);
+}
+
+.comp-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 2px solid var(--lavender);
+  font-family: 'Secular One', sans-serif;
+  font-size: 0.85rem;
+  color: var(--deep-purple);
+}
+
 /* ===== Utility Classes ===== */
 .hidden {
   display: none !important;

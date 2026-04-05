@@ -513,6 +513,194 @@
   }
 
   // ==========================================
+  // CHART 4: PERIOD COMPARISON (growth between two periods)
+  // ==========================================
+  var compState = { mode: 'absolute', fromAge: 0, toAge: 0, anim: {} };
+
+  function createComparisonCard() {
+    var card = document.createElement('div');
+    card.className = 'vocab-card';
+    var range = getAgeRange();
+
+    var h = '<h3 class="vocab-card-title">השוואת גידול בין תקופות</h3>';
+
+    // Period selectors row
+    h += '<div class="comp-selectors">';
+    h += '<div class="comp-period">';
+    h += '<label class="comp-label">מתקופה</label>';
+    h += '<select class="comp-select" id="compFrom">';
+    for (var m = range.min; m <= range.max; m++) {
+      h += '<option value="' + m + '"' + (m === range.min ? ' selected' : '') + '>' + ageToHebrew(m) + '</option>';
+    }
+    h += '</select></div>';
+    h += '<span class="comp-arrow">←</span>';
+    h += '<div class="comp-period">';
+    h += '<label class="comp-label">עד תקופה</label>';
+    h += '<select class="comp-select" id="compTo">';
+    for (var m2 = range.min; m2 <= range.max; m2++) {
+      h += '<option value="' + m2 + '"' + (m2 === range.max ? ' selected' : '') + '>' + ageToHebrew(m2) + '</option>';
+    }
+    h += '</select></div>';
+    h += '</div>';
+
+    // Toggle
+    h += '<div class="comp-toggle-row">';
+    h += '<button class="comp-toggle-btn active" id="compAbsBtn" data-mode="absolute">כמות</button>';
+    h += '<button class="comp-toggle-btn" id="compRelBtn" data-mode="relative">אחוזים</button>';
+    h += '</div>';
+
+    // Chart area
+    h += '<div class="comp-chart-area" id="compChartArea"></div>';
+
+    card.innerHTML = h;
+    return card;
+  }
+
+  function setupComparisonCard() {
+    var fromSel = document.getElementById('compFrom');
+    var toSel = document.getElementById('compTo');
+    var absBtn = document.getElementById('compAbsBtn');
+    var relBtn = document.getElementById('compRelBtn');
+    if (!fromSel || !toSel) return;
+
+    var range = getAgeRange();
+    compState.fromAge = range.min;
+    compState.toAge = range.max;
+
+    function update() {
+      compState.fromAge = parseInt(fromSel.value);
+      compState.toAge = parseInt(toSel.value);
+      renderComparison();
+    }
+
+    fromSel.addEventListener('change', update);
+    toSel.addEventListener('change', update);
+
+    absBtn.addEventListener('click', function () {
+      compState.mode = 'absolute';
+      absBtn.classList.add('active');
+      relBtn.classList.remove('active');
+      renderComparison();
+    });
+    relBtn.addEventListener('click', function () {
+      compState.mode = 'relative';
+      relBtn.classList.add('active');
+      absBtn.classList.remove('active');
+      renderComparison();
+    });
+
+    renderComparison();
+  }
+
+  function renderComparison() {
+    var area = document.getElementById('compChartArea');
+    if (!area) return;
+
+    var fromWords = getWordsUpTo(compState.fromAge);
+    var toWords = getWordsUpTo(compState.toAge);
+    var fromCats = getCategories(fromWords);
+    var toCats = getCategories(toWords);
+    var fromTotal = fromWords.filter(function (w) { return w.cdi_category !== 'unclear'; }).length;
+    var toTotal = toWords.filter(function (w) { return w.cdi_category !== 'unclear'; }).length;
+
+    var isRel = compState.mode === 'relative';
+
+    // Find max value for bar scaling
+    var maxVal = 0;
+    CAT_ORDER.forEach(function (c) {
+      var fv = isRel ? (fromTotal > 0 ? ((fromCats[c] || []).length / fromTotal) * 100 : 0) : (fromCats[c] || []).length;
+      var tv = isRel ? (toTotal > 0 ? ((toCats[c] || []).length / toTotal) * 100 : 0) : (toCats[c] || []).length;
+      if (fv > maxVal) maxVal = fv;
+      if (tv > maxVal) maxVal = tv;
+    });
+    if (maxVal === 0) maxVal = 1;
+
+    var html = '';
+
+    CAT_ORDER.forEach(function (c) {
+      var fromCount = (fromCats[c] || []).length;
+      var toCount = (toCats[c] || []).length;
+      var fromVal, toVal, fromLabel, toLabel;
+
+      if (isRel) {
+        fromVal = fromTotal > 0 ? (fromCount / fromTotal) * 100 : 0;
+        toVal = toTotal > 0 ? (toCount / toTotal) * 100 : 0;
+        fromLabel = Math.round(fromVal) + '%';
+        toLabel = Math.round(toVal) + '%';
+      } else {
+        fromVal = fromCount;
+        toVal = toCount;
+        fromLabel = fromCount + '';
+        toLabel = toCount + '';
+      }
+
+      // Growth calculation
+      var growthPct;
+      var growthText;
+      var growthClass;
+      if (isRel) {
+        var diff = toVal - fromVal;
+        growthText = (diff >= 0 ? '+' : '') + Math.round(diff) + ' נק\'';
+        growthClass = diff > 0 ? 'growth-up' : diff < 0 ? 'growth-down' : 'growth-same';
+      } else {
+        var absDiff = toCount - fromCount;
+        if (fromCount === 0 && toCount > 0) {
+          growthText = '+' + toCount + ' חדש';
+          growthClass = 'growth-up';
+        } else if (fromCount === 0 && toCount === 0) {
+          growthText = '—';
+          growthClass = 'growth-same';
+        } else {
+          growthPct = Math.round(((toCount - fromCount) / fromCount) * 100);
+          growthText = (absDiff >= 0 ? '+' : '') + absDiff + ' (' + (growthPct >= 0 ? '+' : '') + growthPct + '%)';
+          growthClass = absDiff > 0 ? 'growth-up' : absDiff < 0 ? 'growth-down' : 'growth-same';
+        }
+      }
+
+      var fromPct = (fromVal / maxVal) * 100;
+      var toPct = (toVal / maxVal) * 100;
+      var color = CAT_COLORS[c];
+
+      html += '<div class="comp-row">';
+      html += '<div class="comp-row-label">';
+      html += '<span class="vocab-legend-dot" style="background:' + color + '"></span>';
+      html += '<span>' + CAT_LABELS[c] + '</span>';
+      html += '</div>';
+      html += '<div class="comp-bars">';
+      html += '<div class="comp-bar-pair">';
+      html += '<div class="comp-bar-track">';
+      html += '<div class="comp-bar from-bar" style="--target-w:' + Math.max(fromPct, 2) + '%;background:' + color + '"><span class="comp-bar-val">' + fromLabel + '</span></div>';
+      html += '</div>';
+      html += '<div class="comp-bar-track">';
+      html += '<div class="comp-bar to-bar" style="--target-w:' + Math.max(toPct, 2) + '%;background:' + color + '"><span class="comp-bar-val">' + toLabel + '</span></div>';
+      html += '</div>';
+      html += '</div>';
+      html += '</div>';
+      html += '<div class="comp-growth ' + growthClass + '">' + growthText + '</div>';
+      html += '</div>';
+    });
+
+    // Summary row
+    if (!isRel) {
+      var totalGrowth = toTotal - fromTotal;
+      var totalPct = fromTotal > 0 ? Math.round((totalGrowth / fromTotal) * 100) : (toTotal > 0 ? 100 : 0);
+      html += '<div class="comp-summary">';
+      html += '<span>סה"כ: ' + fromTotal + ' → ' + toTotal + '</span>';
+      html += '<span class="comp-growth ' + (totalGrowth > 0 ? 'growth-up' : totalGrowth < 0 ? 'growth-down' : 'growth-same') + '">';
+      html += (totalGrowth >= 0 ? '+' : '') + totalGrowth + ' מילים (' + (totalPct >= 0 ? '+' : '') + totalPct + '%)';
+      html += '</span></div>';
+    }
+
+    area.innerHTML = html;
+
+    // Animate bars in
+    requestAnimationFrame(function () {
+      var bars = area.querySelectorAll('.comp-bar');
+      bars.forEach(function (bar) { bar.classList.add('animated'); });
+    });
+  }
+
+  // ==========================================
   // MAIN TRENDS CHART ENHANCEMENT
   // ==========================================
   function enhanceMainTrendsChart() {
@@ -579,6 +767,11 @@
     container.appendChild(c3);
     setupSlider('vchart3', range, function (age) { drawBubbleMap('vchart3', age); });
     buildLegend('vchart3', bubbleLegend);
+
+    // Card 4: Period comparison
+    var c4 = createComparisonCard();
+    container.appendChild(c4);
+    setupComparisonCard();
   }
 
   if (document.readyState === 'loading') {
