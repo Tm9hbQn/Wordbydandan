@@ -21,14 +21,14 @@
 /
 ├── index.html              # Main single-page app
 ├── tests.html              # Pixel art character studio / test page
-├── vocabulary.json         # Static vocabulary data with CDI categories (38 words)
+├── vocabulary.json         # Static vocabulary data with CDI categories (76 words)
 ├── CLAUDE.md               # This file - READ BEFORE MAKING CHANGES
 ├── css/
-│   ├── styles.css          # All main site styles (~2200 lines)
+│   ├── styles.css          # All main site styles (~2400 lines)
 │   ├── pixel-baby.css      # Pixel art baby character styles (not loaded in main)
 ├── js/
-│   ├── app.js              # All main app logic (~1800 lines)
-│   ├── vocab-charts.js     # Vocabulary analysis charts (CDI categories, 3 cards)
+│   ├── app.js              # All main app logic (~2000 lines)
+│   ├── vocab-charts.js     # Vocabulary analysis charts (CDI categories, 4 cards)
 │   ├── pixel-baby.js       # Pixel art baby character code (not loaded in main)
 └── supabase/               # Supabase config
 ```
@@ -37,14 +37,181 @@
 1. **Header** - Gradient background with baby emoji, alphabet blocks (א ב ג), site title
 2. **Input Section** - Word input field with marker-style design, "הוסיפו" button
 3. **Age Picker** - Scroll wheel picker for baby's age when word was spoken
-4. **Notes Section** - Optional context/story about the word
+4. **Notes Section** - Optional context/story about the word + link toggle (see below)
 5. **Success Toast** - Animated notification after adding a word
 6. **Section Navigation** - Sticky nav bar with "אוצר מילים" / "מגמות" tabs + "הוסיפו מילה" button. Updates active state on scroll via IntersectionObserver
 7. **Words Section** - Display all words with Grid/Timeline toggle, search. Timeline shows 10 latest words by default with "load more" button (loads 50 more, then all remaining). Has blur-fade at bottom before load-more button
-8. **Trends Section** - Growth chart (SVG), stat card with Lucide trending-up icon
+8. **Trends Section** - Growth chart (SVG), stat card with Lucide trending-up icon, 4 vocabulary analysis cards
 9. **Word Edit Modal** - View/edit word details, evolution chain linking
 10. **Evolution Chain Modal** - Full chain view with reorder controls
 11. **Footer** - Copyright, export button, test page link
+
+---
+
+## Data Layer
+
+### Database Schema (Supabase)
+```sql
+words {
+  id: UUID (primary key)
+  word: TEXT
+  age_months: INTEGER (nullable)
+  notes: TEXT (nullable)
+  linked_to: UUID (nullable, FK to words.id)
+  created_at: TIMESTAMPTZ
+  updated_at: TIMESTAMPTZ
+}
+```
+
+### vocabulary.json (Static CDI Data for Charts)
+- **Purpose:** Powers the vocabulary analysis charts in the trends section
+- **Kept in sync manually** with the Supabase DB — when words are added to DB, also add to vocabulary.json
+- **76 entries** (as of April 2026), each with: `id`, `word`, `target_meaning`, `age_in_months`, `cdi_category`, `sub_category`, `notes`
+- **Linked words (evolution chains) are ONE entry** using the earliest age. Notes mention the chain (e.g., "שרשרת: בא → פא פא → אבא")
+- Words with `linked_to` in DB = later pronunciation of an existing concept, NOT a new word
+
+### CDI Classification System (MacArthur-Bates Standard)
+Words are classified by **semantic function for the baby**, not dictionary definitions.
+
+**5 Main Categories (displayed in charts):**
+
+| `cdi_category` | Hebrew Label | Description |
+|---|---|---|
+| `general_nominals` | שמות עצם כלליים | Physical objects, animals, concepts in categories |
+| `specific_nominals` | שמות עצם ספציפיים | Specific people or pets by name |
+| `action_words` | מילות פעולה | Verbs, action requests |
+| `modifiers` | מתארים | Adjectives, states, locations |
+| `personal_social` | אינטראקציה וחברה | Social routines, sound effects, assertions, desires |
+| `unclear` | לא ברור | Uncategorized (excluded from charts) |
+
+**Sub-categories within each main category:**
+
+- `general_nominals`: `animals`, `food_drink`, `body_parts`, `clothing`, `toys_and_routines`, `vehicles`, `household`
+- `specific_nominals`: `people`, `pets`
+- `action_words`: `actions`
+- `modifiers`: `attributes`, `states`, `locatives`
+- `personal_social`: `routines_and_games`, `sound_effects`, `assertions`, `state_and_desire`
+
+**Classification Edge Cases (CDI "Gold Standard" Rules):**
+- **Animal sounds as nouns:** "הב-הב" used to NAME the dog → `general_nominals/animals` (not sound_effects)
+- **Animal sounds as imitation:** "מיאו" while playing → `personal_social/sound_effects`
+- **Location words as actions:** "למעלה" meaning "pick me up" → `action_words` (functional intent = action)
+- **Objects as action requests:** "דלת" meaning "open the door" → keep as `general_nominals/household` (CDI standard: physical objects stay as nominals)
+- **Control words (עוד/די/אין/לא):** Always `personal_social/state_and_desire` or `assertions`, even when said next to food
+
+### Colors for Chart Categories
+```js
+general_nominals: '#6C5CE7'  // purple
+specific_nominals: '#FF6B9D' // pink
+action_words: '#4DD0E1'      // cyan
+modifiers: '#FFD93D'          // yellow
+personal_social: '#CE93D8'   // lavender
+```
+
+---
+
+## Search System
+
+### Fuzzy Search (app.js)
+- Uses **Levenshtein distance** algorithm for typo tolerance
+- Searches both `word` and `notes` fields
+- **Relevance scoring** (lower = better): exact match (0) > starts-with (1) > contains (2) > Levenshtein ≤1 (3) > Levenshtein ≤2 (4) > notes match (5) > fuzzy (6+)
+
+### Search UX Behavior
+- **Auto-switches to grid view** when user starts typing (stores previous view)
+- **Restores previous view** when search is cleared
+- **Results sorted by relevance** — best match appears first
+- **Exact match glow:** Cards matching exactly get class `exact-match-glow` with animated pink pulse border (`exactMatchPulse` CSS keyframes)
+- State: `searchQuery` (global), `preSearchView` (stores view before search)
+
+### `isExactMatch(query, wordObj)`
+Returns true if query exactly matches the word or appears in parentheses in the word text.
+
+### `findSimilarWords(text)`
+Used by duplicate detection. Finds words with Levenshtein ≤1, substring matches, or parenthetical target meaning matches. Returns max 5 results.
+
+---
+
+## Adding a New Word Flow
+
+### Step-by-step flow (app.js)
+1. **Input** → User types word and clicks "הוסיפו" or presses Enter
+2. **Duplicate Check** → `findSimilarWords()` runs on the input text
+   - If similar words found → show `dup-overlay` modal with matches
+   - User picks existing word → opens edit modal, cancels add
+   - User clicks "לא, להוסיף כמילה חדשה" → proceeds to step 3
+   - If no similar words → proceeds directly to step 3
+3. **Age Picker** → Swish animation hides input, shows age wheel
+4. **Notes Section** → After age selected, shows:
+   - Text input for context/story
+   - **Link toggle** (checkbox: "מילה מקושרת - התפתחות של מילה קיימת")
+   - When checked → dropdown appears listing all root words (no `linked_to`) sorted by age descending
+   - Selected word ID stored in `currentLinkedTo`
+5. **Save** → `saveNewWord(notes)` calls `insertWord()` with `{ word, age_months, notes, linked_to }`
+6. **Success Toast** → Shows confirmation, reloads word list
+
+### Key State Variables
+- `currentWord` - word being added
+- `currentAgeMonths` - selected age
+- `currentLinkedTo` - UUID of linked word (null if not linked)
+- `submitting` - prevents double submission
+
+### Duplicate Detection Modal
+- Class: `dup-overlay` / `dup-modal`
+- Shows up to 5 similar words with word text and age
+- Clicking a match opens its edit modal
+- "No" button proceeds with adding the new word
+- Clicking overlay background closes it
+
+---
+
+## Vocabulary Analysis Charts (vocab-charts.js)
+
+### Architecture
+- Self-contained IIFE, loads `vocabulary.json` via fetch
+- All charts use `<canvas>` with manual 2D context drawing (no chart library)
+- Each card has an independent time slider
+- `BABY_MAX_AGE = 16` months cap
+
+### Card 1: "אבולוציית הקטגוריות" (Category Evolution)
+- **Stacked bar chart** per month showing cumulative word count by main CDI category
+- Click a bar → tooltip updates to show that month's breakdown
+- Default tooltip shows full breakdown up to slider value
+- Uses `buildCategoryBreakdownHTML()` for tooltip content
+
+### Card 2: "חלוקה יחסית של הקטגוריות" (Relative Distribution)
+- **Single proportional stacked bar** (vertical column) with percentage labels
+- Smooth animation between slider values using `propAnimState` + `requestAnimationFrame`
+- Labels with connecting lines drawn on the right side of the bar
+
+### Card 3: "מפת תשומת הלב" (Attention Map)
+- **Bubble chart** showing CDI main categories sized by word count
+- Simple spiral layout algorithm, no physics simulation
+- Bubble size proportional to category count
+
+### Card 4: "השוואת גידול בין תקופות" (Period Comparison)
+- **Two dropdown selectors** for start/end period (age in months)
+- **Horizontal bar pairs** per category: faded bar (from-period) + solid bar (to-period)
+- **Growth indicator** per category showing absolute change + percentage
+- **Toggle** between absolute (כמות) and relative (אחוזים) modes
+- Summary row at bottom with total growth
+- Bars animate in via CSS transition (`comp-bar.animated` class)
+- State: `compState = { mode, fromAge, toAge }`
+
+### Chart Data Flow
+```
+vocabulary.json → fetch → vocabData (filtered by BABY_MAX_AGE)
+                        → getWordsUpTo(age) → getCategories(words)
+                        → CAT_ORDER loop → draw bars/bubbles
+```
+
+### Adding a New Chart
+1. Create draw function (canvas-based or HTML-based)
+2. Create card in `buildCards()` using `createCard(title, id, hasSlider)`
+3. If slider needed, call `setupSlider(id, range, callback)`
+4. If legend needed, call `buildLegend(id, items)` with `CAT_COLORS`/`CAT_LABELS`
+
+---
 
 ## Key Design Decisions
 
@@ -104,32 +271,12 @@ Words can be linked to show language evolution (e.g., "בא" → "פא פא" →
 - Stat card has a Lucide `trending-up` icon
 - Main growth chart has title "גידול בסך אוצר המילים על פני זמן"
 
-### Vocabulary Analysis Cards (below stat card)
-- Data source: `vocabulary.json` (static file, CDI-categorized)
-- Baby max age capped at 16 months (BABY_MAX_AGE in vocab-charts.js)
-- **Card 1: "אבולוציית הקטגוריות"** - Stacked bars per month. Shows persistent category breakdown info below chart (not just on click). Info updates when slider moves or when user clicks a specific bar
-- **Card 2: "חלוקה יחסית של הקטגוריות"** - Proportional stacked bar (single vertical column) showing relative % of each category. Animates smoothly when slider changes. Labels with counts and percentages on the side
-- **Card 3: "מפת תשומת הלב"** - Bubble chart showing CDI categories (not sub-categories)
-- All cards have independent time sliders
-- **CDI Categories (MacArthur-Bates standard):**
-  - `people` (אנשים) - names of people and family titles
-  - `sound_effects` (צלילים וקולות) - animal sounds, environmental sounds
-  - `animals` (חיות) - animal names (not sounds)
-  - `food_drink` (אוכל ושתייה) - food and drink names
-  - `games_routines` (משחקים ושגרות) - social routines, greetings, body functions
-  - `action_words` (מילות פעולה) - verbs
-  - `descriptive_words` (מילות תיאור) - adjectives
-  - `clothing` (ביגוד) - clothing items
-  - `toys` (צעצועים) - toys and play items
-  - `household` (חפצי בית) - household objects
-  - `outside` (חוץ וטבע) - outdoor/nature items
-  - `unclear` (לא ברור) - uncategorized
-- When adding new words to DB, also update vocabulary.json with proper CDI categorization
-- **Planned improvements (not yet implemented):**
-  - Each chart should have a subtitle/description explaining what it shows
-  - Category labels in legends should be clickable to show CDI category explanations
-  - Main trends chart ("גידול בסך אוצר המילים") should also have a slider and persistent info panel below it
-  - Bubble map should use CDI main categories (currently uses CDI categories correctly)
+### Planned improvements (not yet implemented)
+- Each chart should have a subtitle/description explaining what it shows
+- Category labels in legends should be clickable to show CDI category explanations
+- Main trends chart ("גידול בסך אוצר המילים") should also have a slider and persistent info panel below it
+
+---
 
 ## Pixel Art Baby Character (WIP)
 A pixel art baby girl character is being developed for the site:
@@ -142,25 +289,14 @@ A pixel art baby girl character is being developed for the site:
   - Animation positioning was poor (baby hidden behind elements)
 - **Fix approach:** Use single-pixel eyes at 12px width, outward-facing highlights at 16px width; smaller ponytail; distinct lip color for smile
 
-## Database Schema (Supabase)
-```sql
-words {
-  id: UUID (primary key)
-  word: TEXT
-  age_months: INTEGER (nullable)
-  notes: TEXT (nullable)
-  linked_to: UUID (nullable, FK to words.id)
-  created_at: TIMESTAMPTZ
-  updated_at: TIMESTAMPTZ
-}
-```
+---
 
 ## Development Notes
 - The site is a single-page app with no build step
 - All JS is vanilla (no transpilation needed)
 - Cache-bust JS/CSS files with `?v=N` query parameter - **MUST increment on every JS or CSS change**
 - The site uses IntersectionObserver for scroll-reveal animations
-- Fuzzy search uses Levenshtein distance algorithm
+- Fuzzy search uses Levenshtein distance algorithm with relevance scoring
 - Timeline is vertical (flex-direction: column) with vertical scroll
 - Always test on mobile viewport (~375px width) as the site is mobile-first (max-width: 600px/700px)
 
@@ -246,3 +382,5 @@ grep 'words-title' index.html
 | Nav buttons look unstyled | CSS cache buster not updated | Increment styles.css?v=N |
 | Timeline showing all words (no pagination) | `timelineDisplayCount` not resetting | Verify reset in `renderWords()` |
 | Stat card highlights broken | Multiple conflicting animation declarations | Check CSS specificity order |
+| Charts showing sub-categories | `cdi_category` field has old values | Ensure vocabulary.json uses 5 main categories |
+| Duplicate detection not working | `findSimilarWords` not finding match | Check Levenshtein threshold and substring logic |
