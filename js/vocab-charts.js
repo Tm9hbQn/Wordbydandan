@@ -19,39 +19,27 @@
     bg: '#FFF9FB',
   };
 
-  // CDI-based categories (MacArthur-Bates Communicative Development Inventories)
+  // CDI-based main categories (MacArthur-Bates Communicative Development Inventories)
+  // Charts display MAIN categories, not sub-categories
   var CAT_COLORS = {
-    sound_effects: '#CE93D8',
-    animals: '#6C5CE7',
-    food_drink: '#FFD93D',
-    clothing: '#4ECDC4',
-    toys: '#FF8A80',
-    household: '#FFB74D',
-    outside: '#81C784',
-    people: '#FF6B9D',
-    games_routines: '#F48FB1',
+    general_nominals: '#6C5CE7',
+    specific_nominals: '#FF6B9D',
     action_words: '#4DD0E1',
-    descriptive_words: '#FFF176',
+    modifiers: '#FFD93D',
+    personal_social: '#CE93D8',
     unclear: '#B0BEC5',
   };
   var CAT_LABELS = {
-    sound_effects: 'צלילים וקולות',
-    animals: 'חיות',
-    food_drink: 'אוכל ושתייה',
-    clothing: 'ביגוד',
-    toys: 'צעצועים',
-    household: 'חפצי בית',
-    outside: 'חוץ וטבע',
-    people: 'אנשים',
-    games_routines: 'משחקים ושגרות',
+    general_nominals: 'שמות עצם כלליים',
+    specific_nominals: 'שמות עצם ספציפיים',
     action_words: 'מילות פעולה',
-    descriptive_words: 'מילות תיאור',
+    modifiers: 'מתארים',
+    personal_social: 'אינטראקציה וחברה',
     unclear: 'לא ברור',
   };
   var CAT_ORDER = [
-    'people', 'sound_effects', 'animals', 'food_drink',
-    'games_routines', 'action_words', 'descriptive_words',
-    'clothing', 'toys', 'household', 'outside'
+    'general_nominals', 'specific_nominals', 'personal_social',
+    'action_words', 'modifiers'
   ];
 
 
