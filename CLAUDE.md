@@ -21,14 +21,14 @@
 /
 ├── index.html              # Main single-page app
 ├── tests.html              # Pixel art character studio / test page
-├── vocabulary.json         # Static vocabulary data with CDI categories (38 words)
+├── vocabulary.json         # Static vocabulary data with CDI categories (65 words)
 ├── CLAUDE.md               # This file - READ BEFORE MAKING CHANGES
 ├── css/
 │   ├── styles.css          # All main site styles (~2200 lines)
 │   ├── pixel-baby.css      # Pixel art baby character styles (not loaded in main)
 ├── js/
 │   ├── app.js              # All main app logic (~1800 lines)
-│   ├── vocab-charts.js     # Vocabulary analysis charts (CDI categories, 3 cards)
+│   ├── vocab-charts.js     # Vocabulary analysis charts (CDI categories, 4 cards)
 │   ├── pixel-baby.js       # Pixel art baby character code (not loaded in main)
 └── supabase/               # Supabase config
 ```
@@ -44,7 +44,8 @@
 8. **Trends Section** - Growth chart (SVG), stat card with Lucide trending-up icon
 9. **Word Edit Modal** - View/edit word details, evolution chain linking
 10. **Evolution Chain Modal** - Full chain view with reorder controls
-11. **Footer** - Copyright, export button, test page link
+11. **Delete Confirmation Modal** - Custom styled delete confirmation (replaced native confirm())
+12. **Footer** - Copyright, export button, test page link
 
 ## Key Design Decisions
 
@@ -89,6 +90,12 @@ Words can be linked to show language evolution (e.g., "בא" → "פא פא" →
 - Arrows always point right-to-left (← direction)
 - This applies in: word card link text, timeline card link, modal mini-timeline
 - The evolution chain modal uses vertical connectors with ▼ arrows
+- **Timeline link click behavior:** Opens evolution modal (same as grid view). Does NOT scroll the page.
+
+### Delete Confirmation
+- Uses a **custom styled modal** (`#deleteConfirmModal`), NOT native `confirm()`
+- Shows word name, styled icon, cancel/confirm buttons matching site aesthetics
+- Closes on overlay click or cancel button
 
 ### Stat Card Highlights
 - Bold/highlighted text (`.stat-highlight`) animates in ONCE with `statPop`
@@ -108,8 +115,9 @@ Words can be linked to show language evolution (e.g., "בא" → "פא פא" →
 - Data source: `vocabulary.json` (static file, CDI-categorized)
 - Baby max age capped at 16 months (BABY_MAX_AGE in vocab-charts.js)
 - **Card 1: "אבולוציית הקטגוריות"** - Stacked bars per month. Shows persistent category breakdown info below chart (not just on click). Info updates when slider moves or when user clicks a specific bar
-- **Card 2: "חלוקה יחסית של הקטגוריות"** - Proportional stacked bar (single vertical column) showing relative % of each category. Animates smoothly when slider changes. Labels with counts and percentages on the side
-- **Card 3: "מפת תשומת הלב"** - Bubble chart showing CDI categories (not sub-categories)
+- **Card 2: "חלוקה יחסית של הקטגוריות"** - Proportional stacked bar (single vertical column) showing relative % of each category. Animates smoothly when slider changes. Labels with counts and percentages on the side. **IMPORTANT:** Labels and active categories are determined by ACTUAL data, not animation state. Animation is normalized to always sum to 100%. Has wave view toggle.
+- **Card 3: "מפת תשומת הלב"** - Bubble chart showing CDI categories (not sub-categories). Bubble area scales with sqrt(count) for proportional visual representation (min radius 14px)
+- **Card 4: "השוואת תקופות"** - Period comparison with two age selectors and כמות/אחוזים toggle. Bars show value labels (count or %) inside. Growth column shows "חדש" for categories appearing from 0 (not "+100%")
 - All cards have independent time sliders
 - **CDI Categories (MacArthur-Bates standard):**
   - `people` (אנשים) - names of people and family titles
@@ -246,3 +254,7 @@ grep 'words-title' index.html
 | Nav buttons look unstyled | CSS cache buster not updated | Increment styles.css?v=N |
 | Timeline showing all words (no pagination) | `timelineDisplayCount` not resetting | Verify reset in `renderWords()` |
 | Stat card highlights broken | Multiple conflicting animation declarations | Check CSS specificity order |
+| Chart shows wrong % or ghost categories | Animation state used for data display | Always use `actualPcts` for labels, `activeCats` from real data |
+| Proportional bar doesn't fill 100% | Animated values not normalized | Normalize animated values: `animSum` then `current[c]/animSum * barH` |
+| Delete uses native confirm() | Regression | Use `#deleteConfirmModal` custom modal, never `confirm()` |
+| Period comparison looks same in both modes | No value labels on bars | Bars must have `<span class="period-bar-val">` with count or % |
