@@ -1815,7 +1815,7 @@ function renderTrends() {
   svg.appendChild(areaEl);
   requestAnimationFrame(() => { areaEl.style.opacity = '1'; });
 
-  // Line stroke
+  // Line stroke (dashed between points)
   const lineEl = document.createElementNS(ns, 'path');
   lineEl.setAttribute('d', linePath);
   lineEl.setAttribute('fill', 'none');
@@ -1823,20 +1823,23 @@ function renderTrends() {
   lineEl.setAttribute('stroke-width', '2.5');
   lineEl.setAttribute('stroke-linecap', 'round');
   lineEl.setAttribute('stroke-linejoin', 'round');
-  // Animate line drawing
-  const lineLen = lineEl.getTotalLength ? 1500 : 0;
-  if (lineEl.getTotalLength) {
-    const len = lineEl.getTotalLength();
-    lineEl.setAttribute('stroke-dasharray', len);
-    lineEl.setAttribute('stroke-dashoffset', len);
-    lineEl.style.transition = 'stroke-dashoffset 1.2s ease-out';
-    svg.appendChild(lineEl);
-    requestAnimationFrame(() => { lineEl.setAttribute('stroke-dashoffset', '0'); });
-  } else {
-    svg.appendChild(lineEl);
-  }
+  lineEl.setAttribute('stroke-dasharray', '8 5');
+  svg.appendChild(lineEl);
+
+  // Vertical cursor line (hidden by default)
+  const cursorLine = document.createElementNS(ns, 'line');
+  cursorLine.setAttribute('x1', 0);
+  cursorLine.setAttribute('x2', 0);
+  cursorLine.setAttribute('y1', pad.top);
+  cursorLine.setAttribute('y2', pad.top + chartH);
+  cursorLine.setAttribute('stroke', 'rgba(108,92,231,0.35)');
+  cursorLine.setAttribute('stroke-width', '1.5');
+  cursorLine.setAttribute('stroke-dasharray', '4 3');
+  cursorLine.style.display = 'none';
+  svg.appendChild(cursorLine);
 
   // Data points (circles) - interactive
+  const circles = [];
   dataPoints.forEach((dp) => {
     const cx = xScale(dp.month);
     const cy = yScale(dp.total);
@@ -1848,56 +1851,230 @@ function renderTrends() {
     circle.setAttribute('stroke', 'white');
     circle.setAttribute('stroke-width', '2');
     circle.style.cursor = 'pointer';
-    circle.style.transition = 'r 0.2s ease, fill 0.2s ease';
-
-    // Invisible larger hit area
-    const hitArea = document.createElementNS(ns, 'circle');
-    hitArea.setAttribute('cx', cx);
-    hitArea.setAttribute('cy', cy);
-    hitArea.setAttribute('r', '16');
-    hitArea.setAttribute('fill', 'transparent');
-    hitArea.style.cursor = 'pointer';
-
-    const showTip = (e) => {
-      const hebrewAge = ageMonthsToHebrew(dp.month);
-      const dateStr = formatTimelineDate(dp.month);
-      tooltip.innerHTML = `<strong>${hebrewAge}</strong> (${dateStr})<br>סה״כ: ${dp.total} מילים` +
-        (dp.newWords > 0 ? `<br>חדשות: +${dp.newWords}` : '');
-      tooltip.classList.remove('hidden');
-
-      // Position tooltip
-      const chartRect = svg.getBoundingClientRect();
-      const containerRect = svg.parentElement.getBoundingClientRect();
-      let tipX = cx - (tooltip.offsetWidth / 2);
-      let tipY = cy - tooltip.offsetHeight - 14;
-
-      // Clamp within container
-      const maxTipX = containerRect.width - tooltip.offsetWidth - 8;
-      tipX = Math.max(8, Math.min(tipX, maxTipX));
-      if (tipY < 0) tipY = cy + 20;
-
-      tooltip.style.left = tipX + 'px';
-      tooltip.style.top = tipY + 'px';
-
-      circle.setAttribute('r', dp.month === bestMonth.month ? '8' : '6');
-    };
-
-    const hideTip = () => {
-      tooltip.classList.add('hidden');
-      circle.setAttribute('r', dp.month === bestMonth.month ? '6' : '4');
-    };
-
-    hitArea.addEventListener('mouseenter', showTip);
-    hitArea.addEventListener('mouseleave', hideTip);
-    hitArea.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      showTip(e);
-      setTimeout(hideTip, 2500);
-    }, { passive: false });
-
+    circle.style.transition = 'r 0.15s ease';
     svg.appendChild(circle);
-    svg.appendChild(hitArea);
+    circles.push({ dp, cx, cy, circle });
   });
+
+  // Interactive hit area over entire chart for cursor + tooltip
+  const hitRect = document.createElementNS(ns, 'rect');
+  hitRect.setAttribute('x', pad.left);
+  hitRect.setAttribute('y', pad.top);
+  hitRect.setAttribute('width', chartW);
+  hitRect.setAttribute('height', chartH);
+  hitRect.setAttribute('fill', 'transparent');
+  hitRect.style.cursor = 'crosshair';
+  svg.appendChild(hitRect);
+
+  function findClosest(mx) {
+    let closest = null, minDist = Infinity;
+    circles.forEach(c => {
+      const d = Math.abs(mx - c.cx);
+      if (d < minDist) { minDist = d; closest = c; }
+    });
+    return closest;
+  }
+
+  function showCursor(mx) {
+    const c = findClosest(mx);
+    if (!c) return;
+    // Vertical cursor line
+    cursorLine.setAttribute('x1', c.cx);
+    cursorLine.setAttribute('x2', c.cx);
+    cursorLine.style.display = '';
+
+    // Highlight closest point
+    circles.forEach(o => {
+      o.circle.setAttribute('r', o.dp.month === bestMonth.month ? '6' : '4');
+    });
+    c.circle.setAttribute('r', c.dp.month === bestMonth.month ? '8' : '6');
+
+    // Tooltip
+    const hebrewAge = ageMonthsToHebrew(c.dp.month);
+    const dateStr = formatTimelineDate(c.dp.month);
+    tooltip.innerHTML = `<strong>${hebrewAge}</strong> (${dateStr})<br>סה״כ: ${c.dp.total} מילים` +
+      (c.dp.newWords > 0 ? `<br>חדשות: +${c.dp.newWords}` : '');
+    tooltip.classList.remove('hidden');
+
+    const containerRect = svg.parentElement.getBoundingClientRect();
+    let tipX = c.cx - (tooltip.offsetWidth / 2);
+    let tipY = c.cy - tooltip.offsetHeight - 14;
+    const maxTipX = containerRect.width - tooltip.offsetWidth - 8;
+    tipX = Math.max(8, Math.min(tipX, maxTipX));
+    if (tipY < 0) tipY = c.cy + 20;
+    tooltip.style.left = tipX + 'px';
+    tooltip.style.top = tipY + 'px';
+  }
+
+  function hideCursor() {
+    cursorLine.style.display = 'none';
+    tooltip.classList.add('hidden');
+    circles.forEach(o => {
+      o.circle.setAttribute('r', o.dp.month === bestMonth.month ? '6' : '4');
+    });
+  }
+
+  hitRect.addEventListener('mousemove', (e) => {
+    const rect = svg.getBoundingClientRect();
+    showCursor(e.clientX - rect.left);
+  });
+  hitRect.addEventListener('mouseleave', hideCursor);
+  hitRect.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    showCursor(e.touches[0].clientX - rect.left);
+    setTimeout(hideCursor, 2500);
+  }, { passive: false });
+
+  // --- Delta Chart (new words per month) ---
+  const deltaSvg = document.getElementById('deltaSvg');
+  const deltaTooltip = document.getElementById('deltaTooltip');
+  if (deltaSvg && dataPoints.length > 0) {
+    const dRect = deltaSvg.getBoundingClientRect();
+    const dW = dRect.width || 600;
+    const dH = dRect.height || 260;
+    const dPad = { top: 25, right: 16, bottom: 44, left: 42 };
+    const dChartW = dW - dPad.left - dPad.right;
+    const dChartH = dH - dPad.top - dPad.bottom;
+
+    const maxNew = Math.max(...dataPoints.map(d => d.newWords), 1);
+    const dYStep = maxNew <= 5 ? 1 : maxNew <= 15 ? 2 : maxNew <= 30 ? 5 : 10;
+    const dYMax = Math.ceil(maxNew / dYStep) * dYStep;
+
+    const dXScale = (m) => dPad.left + ((m - minMonth) / Math.max(currentAgeMonths - minMonth, 1)) * dChartW;
+    const dYScale = (v) => dPad.top + dChartH - (v / dYMax) * dChartH;
+
+    deltaSvg.innerHTML = '';
+
+    // Y-axis grid
+    for (let v = 0; v <= dYMax; v += dYStep) {
+      const y = dYScale(v);
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', dPad.left);
+      line.setAttribute('x2', dW - dPad.right);
+      line.setAttribute('y1', y);
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke', v === 0 ? 'rgba(255,107,157,0.15)' : 'rgba(255,107,157,0.06)');
+      line.setAttribute('stroke-width', v === 0 ? '1.5' : '1');
+      deltaSvg.appendChild(line);
+      const label = document.createElementNS(ns, 'text');
+      label.setAttribute('x', dPad.left - 6);
+      label.setAttribute('y', y + 4);
+      label.setAttribute('text-anchor', 'end');
+      label.setAttribute('class', 'axis-label');
+      label.textContent = v;
+      deltaSvg.appendChild(label);
+    }
+
+    // X-axis labels
+    for (let m = minMonth; m <= currentAgeMonths; m += xLabelInterval) {
+      const x = dXScale(m);
+      const label = document.createElementNS(ns, 'text');
+      label.setAttribute('x', x);
+      label.setAttribute('y', dH - dPad.bottom + 18);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('class', 'axis-label');
+      const shortLabel = m === 0 ? 'לידה' : m < 12 ? m + ' ח\'' : (Math.floor(m/12)) + ' ש\'' + (m%12 > 0 ? ' ' + (m%12) + 'ח\'' : '');
+      label.textContent = shortLabel;
+      deltaSvg.appendChild(label);
+    }
+
+    // Bars
+    const barW = Math.max(8, Math.min(28, (dChartW / dataPoints.length) - 4));
+    const deltaBars = [];
+    dataPoints.forEach((dp) => {
+      const cx = dXScale(dp.month);
+      const barH = dp.newWords > 0 ? (dp.newWords / dYMax) * dChartH : 0;
+      const y = dYScale(dp.newWords);
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', cx - barW / 2);
+      rect.setAttribute('y', y);
+      rect.setAttribute('width', barW);
+      rect.setAttribute('height', barH);
+      rect.setAttribute('rx', '4');
+      rect.setAttribute('fill', dp.month === bestMonth.month ? '#FF6B9D' : 'rgba(108,92,231,0.6)');
+      deltaSvg.appendChild(rect);
+      deltaBars.push({ dp, cx, rect });
+    });
+
+    // Delta cursor line
+    const dCursorLine = document.createElementNS(ns, 'line');
+    dCursorLine.setAttribute('y1', dPad.top);
+    dCursorLine.setAttribute('y2', dPad.top + dChartH);
+    dCursorLine.setAttribute('stroke', 'rgba(255,107,157,0.35)');
+    dCursorLine.setAttribute('stroke-width', '1.5');
+    dCursorLine.setAttribute('stroke-dasharray', '4 3');
+    dCursorLine.style.display = 'none';
+    deltaSvg.appendChild(dCursorLine);
+
+    // Delta hit area
+    const dHitRect = document.createElementNS(ns, 'rect');
+    dHitRect.setAttribute('x', dPad.left);
+    dHitRect.setAttribute('y', dPad.top);
+    dHitRect.setAttribute('width', dChartW);
+    dHitRect.setAttribute('height', dChartH);
+    dHitRect.setAttribute('fill', 'transparent');
+    dHitRect.style.cursor = 'crosshair';
+    deltaSvg.appendChild(dHitRect);
+
+    function dFindClosest(mx) {
+      let closest = null, minDist = Infinity;
+      deltaBars.forEach(b => {
+        const d = Math.abs(mx - b.cx);
+        if (d < minDist) { minDist = d; closest = b; }
+      });
+      return closest;
+    }
+
+    dHitRect.addEventListener('mousemove', (e) => {
+      const rect = deltaSvg.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const c = dFindClosest(mx);
+      if (!c) return;
+      dCursorLine.setAttribute('x1', c.cx);
+      dCursorLine.setAttribute('x2', c.cx);
+      dCursorLine.style.display = '';
+      deltaBars.forEach(b => b.rect.setAttribute('opacity', '0.5'));
+      c.rect.setAttribute('opacity', '1');
+
+      const hebrewAge = ageMonthsToHebrew(c.dp.month);
+      deltaTooltip.innerHTML = `<strong>${hebrewAge}</strong><br>+${c.dp.newWords} מילים חדשות`;
+      deltaTooltip.classList.remove('hidden');
+      const containerRect = deltaSvg.parentElement.getBoundingClientRect();
+      let tipX = c.cx - (deltaTooltip.offsetWidth / 2);
+      let tipY = dYScale(c.dp.newWords) - deltaTooltip.offsetHeight - 10;
+      tipX = Math.max(8, Math.min(tipX, containerRect.width - deltaTooltip.offsetWidth - 8));
+      if (tipY < 0) tipY = dYScale(c.dp.newWords) + 20;
+      deltaTooltip.style.left = tipX + 'px';
+      deltaTooltip.style.top = tipY + 'px';
+    });
+    dHitRect.addEventListener('mouseleave', () => {
+      dCursorLine.style.display = 'none';
+      deltaTooltip.classList.add('hidden');
+      deltaBars.forEach(b => b.rect.setAttribute('opacity', '1'));
+    });
+    dHitRect.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const rect = deltaSvg.getBoundingClientRect();
+      const mx = e.touches[0].clientX - rect.left;
+      const c = dFindClosest(mx);
+      if (!c) return;
+      dCursorLine.setAttribute('x1', c.cx);
+      dCursorLine.setAttribute('x2', c.cx);
+      dCursorLine.style.display = '';
+      const hebrewAge = ageMonthsToHebrew(c.dp.month);
+      deltaTooltip.innerHTML = `<strong>${hebrewAge}</strong><br>+${c.dp.newWords} מילים חדשות`;
+      deltaTooltip.classList.remove('hidden');
+      const containerRect = deltaSvg.parentElement.getBoundingClientRect();
+      let tipX = c.cx - (deltaTooltip.offsetWidth / 2);
+      deltaTooltip.style.left = Math.max(8, Math.min(tipX, containerRect.width - deltaTooltip.offsetWidth - 8)) + 'px';
+      deltaTooltip.style.top = (dYScale(c.dp.newWords) - deltaTooltip.offsetHeight - 10) + 'px';
+      setTimeout(() => {
+        dCursorLine.style.display = 'none';
+        deltaTooltip.classList.add('hidden');
+      }, 2500);
+    }, { passive: false });
+  }
 
   // --- Stat Card ---
   if (bestMonth.newWords > 0) {

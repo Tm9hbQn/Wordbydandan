@@ -1952,19 +1952,13 @@ body {
   position: relative;
 }
 
-/* Stat highlight: pop in once, then shimmer loop */
+/* Stat highlight: always visible, shimmer loop only */
 .trends-stat-card.revealed .stat-highlight {
-  animation: statPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards,
-             statShimmer 4s ease-in-out 1.5s infinite;
+  animation: statShimmer 4s ease-in-out infinite;
 }
 
-.trends-stat-card.revealed .stat-highlight:nth-of-type(1) { animation-delay: 0.2s, 2s; }
-.trends-stat-card.revealed .stat-highlight:nth-of-type(2) { animation-delay: 0.5s, 3.5s; }
-
-@keyframes statPop {
-  0% { opacity: 0; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1); }
-}
+.trends-stat-card.revealed .stat-highlight:nth-of-type(1) { animation-delay: 0.5s; }
+.trends-stat-card.revealed .stat-highlight:nth-of-type(2) { animation-delay: 2s; }
 
 @keyframes statShimmer {
   0%, 100% { background-position: -200% center; }

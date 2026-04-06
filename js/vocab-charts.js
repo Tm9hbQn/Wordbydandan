@@ -821,9 +821,6 @@
     var catLegend = activeCats.map(function (k) {
       return { color: CAT_COLORS[k], label: CAT_LABELS[k] };
     });
-    var bubbleLegend = activeCats.map(function (k) {
-      return { color: CAT_COLORS[k], label: CAT_LABELS[k] };
-    });
 
     // Card 1: Stacked bars (category evolution)
     var c1 = createCard('אבולוציית הקטגוריות', 'vchart1');
@@ -906,15 +903,6 @@
     }
     c2.appendChild(toWaveBtn);
     c2.appendChild(waveBackBtn);
-
-    // Card 3: Bubble map
-    var c3 = createCard('מפת תשומת הלב', 'vchart3');
-    container.appendChild(c3);
-    setupSlider('vchart3', range, function (age) { drawBubbleMap('vchart3', age); });
-    buildLegend('vchart3', bubbleLegend);
-
-    // Card 4: Period comparison
-    buildPeriodComparisonCard(container);
   }
 
   if (document.readyState === 'loading') {

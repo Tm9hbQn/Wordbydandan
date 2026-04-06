@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Varela+Round&family=Karantina:wght@300;400;700&family=Suez+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=9">
+  <link rel="stylesheet" href="css/styles.css?v=10">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
 </head>
 <body>
@@ -189,6 +189,11 @@
       <svg id="trendsSvg" class="trends-svg"></svg>
       <div class="trends-tooltip hidden" id="trendsTooltip"></div>
     </div>
+    <div class="trends-chart-container" id="deltaChart">
+      <h3 class="trends-chart-title vocab-card-title" style="margin-bottom:0.5rem">מילים חדשות לפי חודש</h3>
+      <svg id="deltaSvg" class="trends-svg"></svg>
+      <div class="trends-tooltip hidden" id="deltaTooltip"></div>
+    </div>
     <div class="trends-stat-card" id="trendsStatCard">
       <p class="trends-stat-text" id="trendsStatText"></p>
     </div>
@@ -295,7 +300,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
-  <script src="js/app.js?v=11"></script>
-  <script src="js/vocab-charts.js?v=8"></script>
+  <script src="js/app.js?v=12"></script>
+  <script src="js/vocab-charts.js?v=9"></script>
 </body>
 </html>
