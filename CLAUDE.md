@@ -1,61 +1,154 @@
-# Wordbydandan - Project Documentation
+# Wordbydandan - Claude Code Project Guide
 
-## Overview
-"המילים הראשונות של דניאלה" (Daniella's First Words) - A baby milestone tracker website that documents a baby's first words with timestamps and context.
+> **Self-Maintenance Rule:** After EVERY task, update this file and IMPROVEMENTS.md if anything changed — new features, bug fixes, removed code, new gotchas, changed line numbers, updated file sizes, new constants, etc. This keeps future sessions accurate. Increment cache busters in index.html whenever JS/CSS files change.
 
-**Live site:** Hosted on GitHub Pages  
-**Repository:** `Tm9hbQn/Wordbydandan`  
-**Language:** Hebrew (RTL)  
-**Baby name constant in code:** `BABY_NAME` (set to "דניאלה")  
-**Birth date constant:** `BABY_BIRTHDAY` (set to "2024-12-05")
+## Quick Context
+
+**What:** "המילים הראשונות של דניאלה" — A Hebrew RTL baby word tracker documenting first words with age, notes, and pronunciation evolution chains.
+
+| Key | Value |
+|-----|-------|
+| Live site | GitHub Pages (auto-deploys from `main`) |
+| Repo | `Tm9hbQn/Wordbydandan` |
+| Language | Hebrew, full RTL (`dir="rtl"` on `<html>`) |
+| `BABY_NAME` | `"דניאלה"` (app.js line 4) |
+| `BABY_BIRTHDAY` | `new Date(2024, 11, 5)` — Dec 5, 2024 (app.js line 3) |
+| `BABY_MAX_AGE` | 16 months (vocab-charts.js) |
 
 ## Tech Stack
-- **Frontend:** Vanilla HTML, CSS, JavaScript (no framework)
-- **Backend:** Supabase (PostgreSQL) with localStorage fallback
-- **Fonts:** Google Fonts - Secular One, Varela Round, Karantina, Suez One
-- **Icons:** Lucide Icons (via CDN)
+
+- **Frontend:** Vanilla HTML + CSS + JS — no build step, no framework
+- **Database:** Supabase (PostgreSQL) with automatic localStorage fallback
+- **Fonts:** Google Fonts — Secular One (headings), Varela Round (body), Karantina (word display), Suez One (minimal use)
+- **Icons:** Lucide Icons v0.344.0 (CDN)
 - **Hosting:** GitHub Pages
 
-## File Structure
+## File Map
+
 ```
 /
-├── index.html              # Main single-page app
-├── tests.html              # Pixel art character studio / test page
-├── vocabulary.json         # Static vocabulary data with CDI categories (65 words)
-├── CLAUDE.md               # This file - READ BEFORE MAKING CHANGES
+├── index.html              # Single-page app (315 lines)
+├── tests.html              # Pixel art character studio (369 lines, NOT linked from main)
+├── vocabulary.json         # Static CDI-categorized vocabulary (85 words, ages 10-16 months)
+├── CLAUDE.md               # THIS FILE — read before every task
+├── IMPROVEMENTS.md         # 20/80 optimization roadmap
 ├── css/
-│   ├── styles.css          # All main site styles (~2200 lines)
-│   ├── pixel-baby.css      # Pixel art baby character styles (not loaded in main)
+│   ├── styles.css          # All main styles (~2630 lines)
+│   └── pixel-baby.css      # Pixel baby styles (NOT loaded in main site)
 ├── js/
-│   ├── app.js              # All main app logic (~1800 lines)
-│   ├── vocab-charts.js     # Vocabulary analysis charts (CDI categories, 2 cards)
-│   ├── pixel-baby.js       # Pixel art baby character code (not loaded in main)
-└── supabase/               # Supabase config
+│   ├── app.js              # Main app logic (~2280 lines)
+│   ├── vocab-charts.js     # Vocabulary analysis charts, IIFE pattern (~720 lines)
+│   └── pixel-baby.js       # Pixel baby character (NOT loaded in main site)
+└── supabase/
+    └── schema.sql          # DB schema with RLS policies
 ```
 
-## Site Sections (top to bottom)
-1. **Header** - Gradient background with baby emoji, alphabet blocks (א ב ג), site title
-2. **Input Section** - Word input field with marker-style design, "הוסיפו" button
-3. **Age Picker** - Scroll wheel picker for baby's age when word was spoken
-4. **Notes Section** - Optional context/story about the word
-5. **Success Toast** - Animated notification after adding a word
-6. **Section Navigation** - Sticky nav bar with "אוצר מילים" / "מגמות" tabs + "הוסיפו מילה" button. Updates active state on scroll via IntersectionObserver
-7. **Words Section** - Display all words with Grid/Timeline toggle, search. Timeline shows 10 latest words by default with "load more" button (loads 50 more, then all remaining). Has blur-fade at bottom before load-more button
-8. **Trends Section** - Growth chart (SVG, dashed lines), delta chart (bar chart), stat card with Lucide trending-up icon
-9. **Word Edit Modal** - View/edit word details, evolution chain linking
-10. **Evolution Chain Modal** - Full chain view with reorder controls
-11. **Delete Confirmation Modal** - Custom styled delete confirmation (replaced native confirm())
-12. **Footer** - Copyright, export button, test page link
+## Loading Order & Dependencies
 
-## Key Design Decisions
+Understanding this prevents 90% of "it doesn't work" issues:
 
-### RTL Layout
-- Site is fully RTL (`dir="rtl"` on `<html>`)
-- All arrows in evolution chains use `←` (right-to-left)
-- CSS `left`/`right` are visual positions (not logical)
+```
+1. Google Fonts (preconnect + stylesheet)
+2. css/styles.css?v=12          ← all visual styles
+3. HTML body renders
+4. Supabase JS SDK (CDN)        ← must load before app.js
+5. Lucide Icons (CDN)           ← must load before app.js calls lucide.createIcons()
+6. js/app.js?v=13               ← main logic, runs on DOMContentLoaded
+7. js/vocab-charts.js?v=11      ← chart IIFE, fetches vocabulary.json on load
+```
+
+**Critical:** `app.js` depends on `window.supabase` (SDK) and `lucide` (icons) being available. `vocab-charts.js` is self-contained (IIFE) and fetches `vocabulary.json` independently with its own cache-bust (`?t=Date.now()`).
+
+## Architecture Overview
+
+### Data Flow
+
+```
+User Input → submitWord() → duplicate check → age picker → notes → saveNewWord()
+                                                                        ↓
+                                                              insertWord() → Supabase
+                                                                        ↓ (fallback)
+                                                                   localStorage
+                                                                        ↓
+                                                              loadWords() → fetchWords()
+                                                                        ↓
+                                                              global `words` array
+                                                                        ↓
+                                                    renderWords() → Grid OR Timeline
+                                                    renderTrends() → SVG charts
+```
+
+### State Variables (app.js globals)
+
+| Variable | Type | Purpose |
+|----------|------|---------|
+| `words` | Array | All word objects from DB |
+| `currentView` | `'grid'\|'timeline'` | Active display mode |
+| `currentWord` | String | Word being added (during add flow) |
+| `currentAgeMonths` | Number\|null | Selected age during add flow |
+| `editingWordId` | String\|null | ID of word being edited |
+| `viewingWord` | Object\|null | Word shown in view modal |
+| `searchQuery` | String | Current search filter |
+| `viewBeforeSearch` | String\|null | View to restore after search clears |
+| `timelineDisplayCount` | Number | Timeline pagination (resets to 10 on re-render) |
+| `addFlowLinkedTo` | String\|null | Linked word ID during add flow |
+| `editingLinkedTo` | String\|null | Linked word ID during edit |
+| `submitting` | Boolean | Prevents duplicate submissions |
+
+### Database Schema
+
+```sql
+words {
+  id:          UUID PRIMARY KEY
+  word:        TEXT NOT NULL
+  age_months:  INTEGER (nullable)
+  notes:       TEXT (nullable)
+  linked_to:   UUID (nullable, FK → words.id)  -- evolution chain parent
+  created_at:  TIMESTAMPTZ
+  updated_at:  TIMESTAMPTZ
+}
+```
+
+Supabase anon key is public (RLS-protected). localStorage key: `'daniella_words'`.
+
+### Dual Persistence
+
+All DB operations follow this pattern:
+1. Try Supabase query
+2. On success: sync to localStorage as backup
+3. On failure: fall back to localStorage operation
+4. `db` global is null if SDK didn't load → pure localStorage mode
+
+## Site Sections (DOM order)
+
+| # | Section | Key IDs | Notes |
+|---|---------|---------|-------|
+| 1 | Header | `#main-header` | Gradient bg, baby emoji, א ב ג blocks |
+| 2 | Floating BG | `#floating-elements` | 10 animated emoji, `aria-hidden`, z-index 0 |
+| 3 | Input | `#inputSection`, `#wordInput`, `#addBtn` | Marker-style design, Karantina font |
+| 4 | Age Picker | `#ageSection`, `#ageOptions` | Scroll-snap wheel, hidden until word submitted |
+| 5 | Notes | `#notesSection`, `#notesInput` | Contenteditable, optional word linking |
+| 6 | Success Toast | `#successOverlay` | Fixed bottom-left, 2s display, z-index 100 |
+| 7 | Words Section | `#wordsSection` | Contains nav, search, grid, timeline |
+| 7a | Section Nav | `#sectionNav` | Sticky, backdrop-blur, tabs + view toggle |
+| 7b | Search | `#searchInput` | Auto-switches to grid, fuzzy matching |
+| 7c | Grid View | `#wordsGrid` | CSS grid, hidden by default |
+| 7d | Timeline | `#timelineWrapper`, `#timelineTrack` | Default view, paginated (10→+50→all) |
+| 8 | Trends | `#trendsSection` | SVG charts, stat card, vocab analysis cards |
+| 8a | Growth Chart | `#trendsChart`, `#trendsSvg` | Cumulative line+area, interactive cursor |
+| 8b | Delta Chart | `#deltaChart`, `#deltaSvg` | Bar chart, best month highlighted pink |
+| 8c | Stat Card | `#trendsStatCard` | Shimmer animation, Lucide trending-up icon |
+| 8d | Vocab Cards | `#vocabCards` | Populated by vocab-charts.js |
+| 9 | Edit Modal | `#editModal` | View/Edit toggle, z-index 200 |
+| 10 | Evo Modal | `#evoModal` | Vertical chain with reorder, z-index 200 |
+| 11 | Delete Modal | `#deleteConfirmModal` | Custom styled, NEVER use native confirm() |
+| 12 | Footer | `.main-footer` | Copyright, export btn, tests.html link |
+
+## Design System
 
 ### Color Palette (CSS Variables)
-```
+
+```css
 --pink: #FFE5EC       --hot-pink: #FF6B9D
 --peach: #FFF3E0      --teal: #4ECDC4
 --mint: #E8F5E9       --yellow: #FFD93D
@@ -64,202 +157,215 @@
 --bg: #FFF9FB         --soft-purple: #6C5CE7
 ```
 
+**Shadows:** `--card-shadow` (subtle), `--card-shadow-hover` (elevated)
+
 ### Typography
-- `Secular One` - Headings (bold Hebrew)
-- `Varela Round` - Body text (rounded, friendly)
-- `Karantina` - Word display text (playful, large)
 
-### Section Navigation
-- Sticky nav bar INSIDE the words section (not above it)
-- Contains two rows: section tabs (אוצר מילים/מגמות + הוסיפו מילה) and view toggle (רשת/ציר זמן)
-- Sticks to top of viewport when scrolling through words/trends sections
-- Buttons are large and centered for mobile accessibility
-- Active tab updates automatically on scroll via IntersectionObserver
-- Uses backdrop-filter blur for glassmorphism effect
+| Font | Usage | CSS Weight |
+|------|-------|------------|
+| Secular One | Headings, bold Hebrew | 400 |
+| Varela Round | Body text, UI elements | 400 |
+| Karantina | Word display (large, playful) | 300, 400, 700 |
+| Suez One | Minimal decorative use | 400 |
 
-### Timeline Pagination
-- Default: shows 10 most recent words (sorted by age descending)
-- "טענו עוד" button loads 50 more words at a time
-- If remaining < 50, shows "טענו את כל X המילים"
-- Blur-fade gradient at bottom before the load-more button
-- `timelineDisplayCount` resets to 10 on any re-render (search, new word added)
-- State variable: `timelineDisplayCount` (global in app.js)
+### Z-Index Layers
 
-### Evolution Chains
-Words can be linked to show language evolution (e.g., "בא" → "פא פא" → "אבא").
-- Arrows always point right-to-left (← direction)
-- This applies in: word card link text, timeline card link, modal mini-timeline
-- The evolution chain modal uses vertical connectors with ▼ arrows
-- **Timeline link click behavior:** Opens evolution modal (same as grid view). Does NOT scroll the page.
-- **Word linking UI** — BOTH the add-word flow AND the edit modal use the same smart search interface:
-  - Fuzzy search input with suggestions appearing as-you-type (NOT a dropdown/select)
-  - Results appear above the input (bottom: 100%) so the mobile keyboard doesn't cover them
-  - Shows a badge with the selected word + remove button after selection
-  - Uses `fuzzyMatchWord()` for matching
+| Z | Layer |
+|---|-------|
+| 0 | Floating background elements |
+| 1-2 | Age wheel components |
+| 5 | Timeline connecting lines |
+| 10 | Header, input, age sections |
+| 20 | Sticky navbar |
+| 50 | Input-focused overlay |
+| 100 | Success toast |
+| 200 | All modals (edit, evo, delete) |
 
-### Delete Confirmation
-- Uses a **custom styled modal** (`#deleteConfirmModal`), NOT native `confirm()`
-- Shows word name, styled icon, cancel/confirm buttons matching site aesthetics
-- Closes on overlay click or cancel button
+### Key Animations (25 total in CSS)
 
-### Stat Card Highlights
-- Bold/highlighted text (`.stat-highlight`) is **always visible** (no pop-in/fade)
-- Only animation is `statShimmer` — a looping background-position shimmer
-- No glowing underlines, no `statPop` (removed — was causing text to disappear)
-- Uses `background-clip: text` for the shimmer gradient effect
+Most important to understand:
+- `floatUp` — background emoji floating
+- `rainbowSlide` — input underline gradient
+- `modalSlideUp` — modal entrance (0.4s cubic-bezier)
+- `statShimmer` — stat card highlight shimmer (1.5s loop)
+- `dotPulseTimeline` — timeline dot pulse
+- Scroll-reveal system: `.reveal-on-scroll` + `.revealed` class + `--reveal-delay` CSS var
 
-### Words Title
-- Format: `💬 המילים של דניאלה` (emoji on the RIGHT/start side in RTL)
+### Word Card Color Rotation
 
-### Trends Section
-- Title is just "מגמות" (without "צמיחה")
-- Stat card has a Lucide `trending-up` icon
-- **Main growth chart**: title "גידול בסך אוצר המילים על פני זמן", dashed lines between data points, interactive vertical cursor line on hover/touch that snaps to nearest data point
-- **Delta chart**: "מילים חדשות לפי חודש" — bar chart showing new words per month (not cumulative), best month highlighted in pink, same interactive cursor behavior
+Cards cycle through 5 colors via `:nth-child(5n+X)`:
+1. pink, 2. teal, 3. yellow, 4. purple, 5. coral
 
-### Vocabulary Analysis Cards (below stat card)
-- Data source: `vocabulary.json` (static file, CDI-categorized)
-- Baby max age capped at 16 months (BABY_MAX_AGE in vocab-charts.js)
-- **Card 1: "אבולוציית הקטגוריות"** - Stacked bars per month. Shows persistent category breakdown info below chart (not just on click). Info updates when slider moves or when user clicks a specific bar
-- **Card 2: "חלוקה יחסית של הקטגוריות"** - Proportional stacked bar (single vertical column) showing relative % of each category. Animates smoothly when slider changes. Labels with counts and percentages on the side. **IMPORTANT:** Labels and active categories are determined by ACTUAL data, not animation state. Animation is normalized to always sum to 100%. Has wave view toggle.
-- ~~Card 3 (bubble map) and Card 4 (period comparison) have been removed~~
-- All cards have independent time sliders
-- **CDI Categories (MacArthur-Bates standard):**
-  - `people` (אנשים) - names of people and family titles
-  - `sound_effects` (צלילים וקולות) - animal sounds, environmental sounds
-  - `animals` (חיות) - animal names (not sounds)
-  - `food_drink` (אוכל ושתייה) - food and drink names
-  - `games_routines` (משחקים ושגרות) - social routines, greetings, body functions
-  - `action_words` (מילות פעולה) - verbs
-  - `descriptive_words` (מילות תיאור) - adjectives
-  - `clothing` (ביגוד) - clothing items
-  - `toys` (צעצועים) - toys and play items
-  - `household` (חפצי בית) - household objects
-  - `outside` (חוץ וטבע) - outdoor/nature items
-  - `unclear` (לא ברור) - uncategorized
-- When adding new words to DB, also update vocabulary.json with proper CDI categorization
-- **Planned improvements (not yet implemented):**
-  - Each chart should have a subtitle/description explaining what it shows
-  - Category labels in legends should be clickable to show CDI category explanations
-  - Main trends chart ("גידול בסך אוצר המילים") should also have a slider and persistent info panel below it
-  - Bubble map should use CDI main categories (currently uses CDI categories correctly)
+## RTL Rules (CRITICAL)
 
-## Pixel Art Baby Character (WIP)
-A pixel art baby girl character is being developed for the site:
-- **Description:** Baby with golden-blonde slightly reddish hair in a small ponytail close to the scalp, pink dress with white polka dots
-- **Current status:** Removed from main site, development continues on test page
-- **Known issues with previous attempt:**
-  - Eyes looked cross-eyed (highlights facing inward)
-  - Ponytail was too tall/prominent
-  - Smile wasn't visible enough
-  - Animation positioning was poor (baby hidden behind elements)
-- **Fix approach:** Use single-pixel eyes at 12px width, outward-facing highlights at 16px width; smaller ponytail; distinct lip color for smile
+1. `dir="rtl"` on `<html>` — everything flows right-to-left
+2. **All user-visible arrows must be `←`** (left-pointing = forward in RTL)
+3. `join(' ← ')` in evolution chain text (grid cards, timeline cards, modal)
+4. CSS `left`/`right` are VISUAL positions (not logical)
+5. Modal close button: `top: 1rem; left: 1rem` (top-left = top-start in RTL)
+6. Canvas charts: `textAlign: 'right'` for labels
 
-## Database Schema (Supabase)
-```sql
-words {
-  id: UUID (primary key)
-  word: TEXT
-  age_months: INTEGER (nullable)
-  notes: TEXT (nullable)
-  linked_to: UUID (nullable, FK to words.id)
-  created_at: TIMESTAMPTZ
-  updated_at: TIMESTAMPTZ
+**Verify:** `grep '→' js/app.js` must return ZERO hits in non-comment code.
+
+## Evolution Chains
+
+Words link via `linked_to` field forming directed graphs:
+
+```
+"בא" ← "פא פא" ← "אבא"  (each word's linked_to points to its predecessor)
+```
+
+- `getEvolutionChain(wordId)`: traces to root, builds forward chain sorted by age
+- Reordering via `swapChainOrder()`: rebuilds all `linked_to` pointers in chain
+- Display: horizontal in cards (`join(' ← ')`), vertical in evo modal (▼ arrows)
+- **Word linking UI**: fuzzy search input (NOT dropdown/select), results above input
+
+## Vocabulary Analysis (vocab-charts.js)
+
+### CDI Categories (ACTUAL code taxonomy)
+
+| Code Key | Hebrew Label | Color |
+|----------|-------------|-------|
+| `general_nominals` | שמות עצם כלליים | #6C5CE7 (purple) |
+| `specific_nominals` | שמות עצם ספציפיים | #FF6B9D (pink) |
+| `action_words` | מילות פעולה | #4DD0E1 (cyan) |
+| `modifiers` | מתארים | #FFD93D (yellow) |
+| `personal_social` | אינטראקציה וחברה | #CE93D8 (purple) |
+| `unclear` | לא ברור | #B0BEC5 (gray, excluded from charts) |
+
+**Sub-categories** in vocabulary.json: people, sound_effects, animals, food_drink (22 words = 26%), body_parts, household, toys_and_routines, clothing, actions, routines_and_games, attributes, assertions, outside, unclear.
+
+### Charts
+
+1. **Stacked Bars** (`vchart1`): Category counts per month, with slider and persistent breakdown below
+2. **Proportional Bar** (`vchart2`): Relative % composition, animated transitions (easing 0.15/frame), wave view toggle
+3. All charts use canvas with `devicePixelRatio` scaling for retina displays
+
+### When Adding Words to DB
+
+**Also update `vocabulary.json`** with proper CDI categorization. Schema per entry:
+```json
+{
+  "id": number,
+  "word": "Hebrew word (phonetic)",
+  "target_meaning": "Hebrew target",
+  "age_in_months": number,
+  "cdi_category": "general_nominals|specific_nominals|action_words|modifiers|personal_social|unclear",
+  "sub_category": "food_drink|animals|people|...",
+  "notes": "Context, pronunciation notes"
 }
 ```
 
-## Development Notes
-- The site is a single-page app with no build step
-- All JS is vanilla (no transpilation needed)
-- Cache-bust JS/CSS files with `?v=N` query parameter - **MUST increment on every JS or CSS change**
-- The site uses IntersectionObserver for scroll-reveal animations
-- Fuzzy search uses Levenshtein distance algorithm
-- Timeline is vertical (flex-direction: column) with vertical scroll
-- Always test on mobile viewport (~375px width) as the site is mobile-first (max-width: 600px/700px)
+## Pixel Baby Character (WIP — test page only)
 
-## Git Workflow
-- Main branch: `main`
-- Feature branches: `claude/*` naming convention
-- Push to main for deployment (GitHub Pages auto-deploys)
+- **Status:** Removed from main site. Development on `tests.html` only.
+- **Files:** `css/pixel-baby.css`, `js/pixel-baby.js` — NOT loaded in `index.html`
+- **Description:** Baby girl with golden-blonde reddish hair, small ponytail, pink polka-dot dress
+- **Known issues:** Cross-eyed look, oversized ponytail, invisible smile, poor animation positioning
+
+## Search System
+
+- `fuzzyMatch()`: substring → char-sequence → Levenshtein distance
+- `getSearchRelevance()`: exact=4, startsWith=3, contains=2, notesContains=1, fuzzy=0
+- Auto-switches to grid view during search, restores previous view on clear
+- Same fuzzy engine used for word linking search in both add-flow and edit modal
 
 ---
 
-## Critical Pre-Push Checklist
+## Pre-Push Checklist
 
-**ALWAYS run these checks before pushing. They prevent 80% of recurring bugs.**
+**Run ALL of these before every push. They prevent recurring bugs.**
 
-### 1. Cache Buster Updated
+### 1. Cache Busters
+
 ```bash
-grep 'app.js?v=' index.html
-grep 'styles.css?v=' index.html
-grep 'vocab-charts.js?v=' index.html
+grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
 ```
-The `?v=N` number in `<script src="js/app.js?v=N">`, `<link href="css/styles.css?v=N">`, and `<script src="js/vocab-charts.js?v=N">` MUST be incremented whenever the respective file changes. Without this, browsers serve stale JS/CSS and changes appear broken.
 
-### 2. RTL Arrow Direction
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=12, app.js?v=13, vocab-charts.js?v=11.
+
+### 2. RTL Arrows
+
 ```bash
-grep '→' js/app.js
+grep -n '→' js/app.js | grep -v '//'
 ```
-There must be ZERO `→` arrows in content-generating code (comments are OK). All user-visible arrows in evolution chains must use `←` (right-to-left). Check these locations:
-- `join(' ← ')` in word card link text (~line 770)
-- `join(' ← ')` in timeline card link text (~line 1367)
-- `'←'` in modal mini-timeline arrow (~line 939)
 
-### 3. Files Referenced in HTML Actually Exist
+Must return ZERO lines. All user-visible arrows: `←` only. Key locations:
+- `join(' ← ')` in grid card link (~line 988)
+- `join(' ← ')` in timeline card link (~line 1640)
+- `'←'` in modal mini-timeline (~line 1159)
+
+### 3. No Broken References
+
 ```bash
-# Check all CSS/JS refs in index.html resolve to real files
-grep -oP '(?:href|src)="([^"]*\.(css|js))"' index.html | while read f; do
-  file=$(echo "$f" | sed 's/.*="//;s/"//;s/?.*//')
-  [ ! -f "$file" ] && echo "MISSING: $file"
-done
+grep -oP '(?:href|src)="([^"]*\.(css|js))"' index.html | sed 's/.*="//;s/"//;s/?.*//' | while read f; do [ ! -f "$f" ] && echo "MISSING: $f"; done
 ```
-Prevents 404 errors from referencing removed or renamed files.
 
-### 4. Pixel Baby Not Loaded in Main Site
+### 4. Pixel Baby Not in Main Site
+
 ```bash
 grep 'pixel-baby' index.html
 ```
-Must return empty. The pixel baby CSS/JS are NOT loaded in the main site (removed, development on tests.html only).
 
-### 5. HTML/JS Syntax Sanity
+Must return empty.
+
+### 5. JS Syntax Valid
+
 ```bash
-# Check for unclosed strings or obvious JS errors
-node -c js/app.js 2>&1 | head -5
-node -c js/vocab-charts.js 2>&1 | head -5
+node -c js/app.js && node -c js/vocab-charts.js && echo "OK"
 ```
-Quick syntax validation before pushing.
 
-### 5b. Vocabulary JSON Validity
+### 6. Vocabulary JSON Valid
+
 ```bash
-node -e "JSON.parse(require('fs').readFileSync('vocabulary.json','utf8'))" 2>&1 | head -3
+node -e "const d=JSON.parse(require('fs').readFileSync('vocabulary.json','utf8')); console.log(d.length+' words, valid')"
 ```
-Ensure vocabulary.json is valid JSON. Each entry needs: id, word, target_meaning, age_in_months, cdi_category, sub_category, notes.
 
-### 6. All New Files Are Git-Tracked
+### 7. Git Status Clean
+
 ```bash
 git status --short
 ```
-Check that any new files (like tests.html) are staged. Untracked files won't deploy to GitHub Pages.
 
-### 7. Key Text Content Verification
+No untracked files that should be committed.
+
+### 8. Key Content
+
 ```bash
-# Trends title should be just "מגמות" (not "מגמות צמיחה")
-grep 'מגמות' index.html
-# Words title emoji should be at the START (right in RTL)
-grep 'words-title' index.html
+grep 'מגמות' index.html    # Should be just "מגמות" not "מגמות צמיחה"
+grep 'words-title' index.html  # Emoji 💬 on the RIGHT/start in RTL
 ```
 
-### Common Gotchas Log
-| Issue | Root Cause | Prevention |
-|-------|-----------|------------|
-| Arrows showing `→` instead of `←` | Browser cache serving old JS | Increment `?v=N` cache buster |
-| New page showing 404 | File not committed/pushed | Run `git status` before push |
-| Pixel baby appearing on main site | CSS/JS still referenced in index.html | Check with `grep pixel-baby index.html` |
-| CSS changes not reflecting | Browser cache | Increment `?v=N` on CSS link (ALWAYS do this) |
-| Nav buttons look unstyled | CSS cache buster not updated | Increment styles.css?v=N |
-| Timeline showing all words (no pagination) | `timelineDisplayCount` not resetting | Verify reset in `renderWords()` |
-| Stat card highlights broken | Multiple conflicting animation declarations | Check CSS specificity order |
-| Chart shows wrong % or ghost categories | Animation state used for data display | Always use `actualPcts` for labels, `activeCats` from real data |
-| Proportional bar doesn't fill 100% | Animated values not normalized | Normalize animated values: `animSum` then `current[c]/animSum * barH` |
-| Delete uses native confirm() | Regression | Use `#deleteConfirmModal` custom modal, never `confirm()` |
-| Add-flow link uses dropdown instead of search | Regression | Must use smart fuzzy search input, never `<select>` dropdown |
+---
+
+## Known Gotchas & Regressions
+
+| Bug | Cause | Fix |
+|-----|-------|-----|
+| Changes don't appear on live site | Browser cache | Increment `?v=N` cache buster |
+| `→` arrows instead of `←` | Old cached JS | Cache buster + verify with grep |
+| 404 on new file | Not git-tracked | `git add` before push |
+| Pixel baby on main site | CSS/JS referenced in index.html | Remove references |
+| Timeline shows all words | `timelineDisplayCount` not reset to 10 | Check `renderWords()` |
+| Stat highlights invisible | Conflicting CSS animations | Only use `statShimmer`, no `statPop` |
+| Chart % wrong / ghost categories | Using animation state for labels | Use `actualPcts` and real `activeCats` |
+| Proportional bar not 100% | Animated values not normalized | Normalize: `current[c]/animSum * barH` |
+| Delete uses native `confirm()` | Regression | Must use `#deleteConfirmModal` |
+| Word linking uses `<select>` | Regression | Must use fuzzy search input |
+| vocab-charts shows stale data | vocabulary.json cached | Already uses `?t=Date.now()` bust |
+| Edit modal stuck in edit mode | `switchToViewMode()` not called | Verify modal state on open |
+
+---
+
+## Self-Update Protocol
+
+After completing ANY task:
+
+1. **Update line numbers** in this file if code was modified significantly
+2. **Update file sizes/line counts** if files grew or shrank notably
+3. **Add new gotchas** if a bug was found and fixed
+4. **Update cache buster versions** listed in this file
+5. **Update vocabulary.json word count** if words were added
+6. **Update `BABY_MAX_AGE`** if baby has passed documented age cap
+7. **Add/remove features** from section table if DOM changed
+8. **Update IMPROVEMENTS.md** if a listed improvement was completed
