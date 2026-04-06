@@ -28,7 +28,7 @@
 │   ├── pixel-baby.css      # Pixel art baby character styles (not loaded in main)
 ├── js/
 │   ├── app.js              # All main app logic (~1800 lines)
-│   ├── vocab-charts.js     # Vocabulary analysis charts (CDI categories, 4 cards)
+│   ├── vocab-charts.js     # Vocabulary analysis charts (CDI categories, 2 cards)
 │   ├── pixel-baby.js       # Pixel art baby character code (not loaded in main)
 └── supabase/               # Supabase config
 ```
@@ -41,7 +41,7 @@
 5. **Success Toast** - Animated notification after adding a word
 6. **Section Navigation** - Sticky nav bar with "אוצר מילים" / "מגמות" tabs + "הוסיפו מילה" button. Updates active state on scroll via IntersectionObserver
 7. **Words Section** - Display all words with Grid/Timeline toggle, search. Timeline shows 10 latest words by default with "load more" button (loads 50 more, then all remaining). Has blur-fade at bottom before load-more button
-8. **Trends Section** - Growth chart (SVG), stat card with Lucide trending-up icon
+8. **Trends Section** - Growth chart (SVG, dashed lines), delta chart (bar chart), stat card with Lucide trending-up icon
 9. **Word Edit Modal** - View/edit word details, evolution chain linking
 10. **Evolution Chain Modal** - Full chain view with reorder controls
 11. **Delete Confirmation Modal** - Custom styled delete confirmation (replaced native confirm())
@@ -98,9 +98,9 @@ Words can be linked to show language evolution (e.g., "בא" → "פא פא" →
 - Closes on overlay click or cancel button
 
 ### Stat Card Highlights
-- Bold/highlighted text (`.stat-highlight`) animates in ONCE with `statPop`
-- After initial animation, a shimmer effect loops (`statShimmer`) 
-- No glowing underlines (removed)
+- Bold/highlighted text (`.stat-highlight`) is **always visible** (no pop-in/fade)
+- Only animation is `statShimmer` — a looping background-position shimmer
+- No glowing underlines, no `statPop` (removed — was causing text to disappear)
 - Uses `background-clip: text` for the shimmer gradient effect
 
 ### Words Title
@@ -109,15 +109,15 @@ Words can be linked to show language evolution (e.g., "בא" → "פא פא" →
 ### Trends Section
 - Title is just "מגמות" (without "צמיחה")
 - Stat card has a Lucide `trending-up` icon
-- Main growth chart has title "גידול בסך אוצר המילים על פני זמן"
+- **Main growth chart**: title "גידול בסך אוצר המילים על פני זמן", dashed lines between data points, interactive vertical cursor line on hover/touch that snaps to nearest data point
+- **Delta chart**: "מילים חדשות לפי חודש" — bar chart showing new words per month (not cumulative), best month highlighted in pink, same interactive cursor behavior
 
 ### Vocabulary Analysis Cards (below stat card)
 - Data source: `vocabulary.json` (static file, CDI-categorized)
 - Baby max age capped at 16 months (BABY_MAX_AGE in vocab-charts.js)
 - **Card 1: "אבולוציית הקטגוריות"** - Stacked bars per month. Shows persistent category breakdown info below chart (not just on click). Info updates when slider moves or when user clicks a specific bar
 - **Card 2: "חלוקה יחסית של הקטגוריות"** - Proportional stacked bar (single vertical column) showing relative % of each category. Animates smoothly when slider changes. Labels with counts and percentages on the side. **IMPORTANT:** Labels and active categories are determined by ACTUAL data, not animation state. Animation is normalized to always sum to 100%. Has wave view toggle.
-- **Card 3: "מפת תשומת הלב"** - Bubble chart showing CDI categories (not sub-categories). Bubble area scales with sqrt(count) for proportional visual representation (min radius 14px)
-- **Card 4: "השוואת תקופות"** - Period comparison with two age selectors and כמות/אחוזים toggle. Bars show value labels (count or %) inside. Growth column shows "חדש" for categories appearing from 0 (not "+100%")
+- ~~Card 3 (bubble map) and Card 4 (period comparison) have been removed~~
 - All cards have independent time sliders
 - **CDI Categories (MacArthur-Bates standard):**
   - `people` (אנשים) - names of people and family titles
