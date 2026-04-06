@@ -2562,23 +2562,34 @@ body::-webkit-scrollbar-thumb {
   cursor: pointer;
 }
 
-.add-flow-link-dropdown {
-  width: 100%;
+.add-flow-link-search {
   margin-top: 0.5rem;
-  padding: 0.6rem 0.8rem;
-  border: 2px solid var(--lavender);
-  border-radius: 14px;
-  font-family: 'Varela Round', sans-serif;
-  font-size: 0.9rem;
-  color: var(--deep-purple);
-  background: white;
-  outline: none;
-  direction: rtl;
-  transition: border-color 0.2s;
+  position: relative;
 }
 
-.add-flow-link-dropdown:focus {
-  border-color: var(--soft-purple);
+.add-flow-link-search .link-search-wrap {
+  position: relative;
+}
+
+.add-flow-link-search .link-results {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(45, 27, 105, 0.15);
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 10;
+  margin-bottom: 0.3rem;
+}
+
+.add-flow-link-search .link-current {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 /* ===== Period Comparison Card ===== */

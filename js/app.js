@@ -597,35 +597,107 @@ function selectAge(months) {
 }
 
 function setupAddFlowLinking() {
-  const linkWrap = document.getElementById('addFlowLinkWrap');
   const checkbox = document.getElementById('addFlowLinkCheckbox');
-  const dropdown = document.getElementById('addFlowLinkDropdown');
-  if (!linkWrap || !checkbox || !dropdown) return;
+  const searchWrap = document.getElementById('addFlowLinkSearch');
+  const searchInput = document.getElementById('addFlowSearchInput');
+  const searchResults = document.getElementById('addFlowSearchResults');
+  const currentWrap = document.getElementById('addFlowLinkCurrent');
+  const badge = document.getElementById('addFlowLinkBadge');
+  const removeBtn = document.getElementById('addFlowLinkRemove');
+  const inputWrap = document.getElementById('addFlowSearchWrap');
+  if (!checkbox || !searchWrap || !searchInput) return;
 
   checkbox.checked = false;
-  dropdown.classList.add('hidden');
-  dropdown.innerHTML = '';
+  searchWrap.classList.add('hidden');
+  searchInput.value = '';
+  searchResults.classList.add('hidden');
+  currentWrap.classList.add('hidden');
+  inputWrap.classList.remove('hidden');
   addFlowLinkedTo = null;
+
+  function updateAddFlowLinkUI() {
+    if (addFlowLinkedTo) {
+      const linked = words.find(w => w.id === addFlowLinkedTo);
+      if (linked) {
+        badge.textContent = linked.word;
+        currentWrap.classList.remove('hidden');
+        inputWrap.classList.add('hidden');
+      }
+    } else {
+      currentWrap.classList.add('hidden');
+      inputWrap.classList.remove('hidden');
+      searchInput.value = '';
+    }
+  }
 
   checkbox.onchange = () => {
     if (checkbox.checked) {
-      dropdown.classList.remove('hidden');
-      // Populate dropdown with all existing words
-      dropdown.innerHTML = '<option value="">בחרו מילה...</option>';
-      words.forEach((w) => {
-        const opt = document.createElement('option');
-        opt.value = w.id;
-        opt.textContent = w.word + (w.age_months !== null ? ' (' + ageMonthsToHebrew(w.age_months) + ')' : '');
-        dropdown.appendChild(opt);
-      });
-    } else {
-      dropdown.classList.add('hidden');
+      searchWrap.classList.remove('hidden');
       addFlowLinkedTo = null;
+      updateAddFlowLinkUI();
+      setTimeout(() => searchInput.focus(), 100);
+    } else {
+      searchWrap.classList.add('hidden');
+      addFlowLinkedTo = null;
+      searchInput.value = '';
+      searchResults.classList.add('hidden');
     }
   };
-  dropdown.onchange = () => {
-    addFlowLinkedTo = dropdown.value || null;
+
+  removeBtn.onclick = () => {
+    addFlowLinkedTo = null;
+    updateAddFlowLinkUI();
+    setTimeout(() => searchInput.focus(), 100);
   };
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim();
+    if (!q) {
+      searchResults.classList.add('hidden');
+      return;
+    }
+    const matches = words.filter(w => {
+      const wLower = w.word.toLowerCase();
+      const qLower = q.toLowerCase();
+      if (wLower.includes(qLower) || qLower.includes(wLower)) return true;
+      return fuzzyMatchWord(q, w);
+    }).slice(0, 8);
+
+    searchResults.innerHTML = '';
+    if (matches.length === 0) {
+      const noResult = document.createElement('div');
+      noResult.className = 'link-result-item';
+      noResult.style.opacity = '0.5';
+      noResult.style.cursor = 'default';
+      noResult.textContent = 'לא נמצאו מילים';
+      searchResults.appendChild(noResult);
+      searchResults.classList.remove('hidden');
+      return;
+    }
+    matches.forEach(w => {
+      const item = document.createElement('div');
+      item.className = 'link-result-item';
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = w.word;
+      const ageSpan = document.createElement('span');
+      ageSpan.className = 'link-result-age';
+      ageSpan.textContent = w.age_months !== null ? ageMonthsToHebrew(w.age_months) : '';
+      item.appendChild(nameSpan);
+      item.appendChild(ageSpan);
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        addFlowLinkedTo = w.id;
+        searchResults.classList.add('hidden');
+        updateAddFlowLinkUI();
+      });
+      searchResults.appendChild(item);
+    });
+    searchResults.classList.remove('hidden');
+  });
+
+  searchInput.addEventListener('blur', () => {
+    setTimeout(() => searchResults.classList.add('hidden'), 400);
+  });
 }
 
 async function saveNewWord(notes) {

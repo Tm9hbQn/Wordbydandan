@@ -91,6 +91,11 @@ Words can be linked to show language evolution (e.g., "בא" → "פא פא" →
 - This applies in: word card link text, timeline card link, modal mini-timeline
 - The evolution chain modal uses vertical connectors with ▼ arrows
 - **Timeline link click behavior:** Opens evolution modal (same as grid view). Does NOT scroll the page.
+- **Word linking UI** — BOTH the add-word flow AND the edit modal use the same smart search interface:
+  - Fuzzy search input with suggestions appearing as-you-type (NOT a dropdown/select)
+  - Results appear above the input (bottom: 100%) so the mobile keyboard doesn't cover them
+  - Shows a badge with the selected word + remove button after selection
+  - Uses `fuzzyMatchWord()` for matching
 
 ### Delete Confirmation
 - Uses a **custom styled modal** (`#deleteConfirmModal`), NOT native `confirm()`
@@ -257,4 +262,4 @@ grep 'words-title' index.html
 | Chart shows wrong % or ghost categories | Animation state used for data display | Always use `actualPcts` for labels, `activeCats` from real data |
 | Proportional bar doesn't fill 100% | Animated values not normalized | Normalize animated values: `animSum` then `current[c]/animSum * barH` |
 | Delete uses native confirm() | Regression | Use `#deleteConfirmModal` custom modal, never `confirm()` |
-| Period comparison looks same in both modes | No value labels on bars | Bars must have `<span class="period-bar-val">` with count or % |
+| Add-flow link uses dropdown instead of search | Regression | Must use smart fuzzy search input, never `<select>` dropdown |
