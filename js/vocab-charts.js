@@ -138,7 +138,7 @@
       var monthWords = getWordsUpTo(highlightMonth);
       var monthCats = getCategories(monthWords);
       var monthTotal = monthWords.filter(function (w) { return w.cdi_category !== 'unclear'; }).length;
-      html += '<div class="vocab-tip-title">' + ageToHebrew(highlightMonth) + ' — ' + monthTotal + ' מילים</div>';
+      html += '<div class="vocab-tip-title">עד גיל ' + ageToHebrew(highlightMonth) + ' — ' + monthTotal + ' מילים</div>';
       cats = monthCats;
       total = monthTotal;
     } else {
@@ -303,30 +303,37 @@
     var cats = getCategories(words);
     var total = words.filter(function (w) { return w.cdi_category !== 'unclear'; }).length;
 
-    // Calculate target percentages
-    var targetPcts = {};
+    // Calculate actual percentages from real data
+    var actualPcts = {};
     CAT_ORDER.forEach(function (c) {
-      targetPcts[c] = total > 0 ? ((cats[c] || []).length / total) * 100 : 0;
+      actualPcts[c] = total > 0 ? ((cats[c] || []).length / total) * 100 : 0;
     });
+
+    // Determine active categories from ACTUAL data (not animation state)
+    var activeCats = CAT_ORDER.filter(function (c) { return (cats[c] || []).length > 0; });
 
     // Initialize animation state if needed
     if (!propAnimState[canvasId]) {
       propAnimState[canvasId] = {};
-      CAT_ORDER.forEach(function (c) { propAnimState[canvasId][c] = targetPcts[c]; });
+      CAT_ORDER.forEach(function (c) { propAnimState[canvasId][c] = actualPcts[c]; });
     }
 
     // Animate towards target
     var current = propAnimState[canvasId];
     var needsAnim = false;
     CAT_ORDER.forEach(function (c) {
-      var diff = targetPcts[c] - current[c];
+      var diff = actualPcts[c] - current[c];
       if (Math.abs(diff) > 0.1) {
         current[c] += diff * 0.15;
         needsAnim = true;
       } else {
-        current[c] = targetPcts[c];
+        current[c] = actualPcts[c];
       }
     });
+
+    // Normalize animated values so bar segments always sum to 100%
+    var animSum = 0;
+    activeCats.forEach(function (c) { animSum += Math.max(0, current[c]); });
 
     // Drawing
     var PAD = { top: 8, right: 16, bottom: 8, left: 16 };
@@ -340,10 +347,9 @@
 
     // Draw stacked bar
     var yOffset = PAD.top;
-    var activeCats = CAT_ORDER.filter(function (c) { return current[c] > 0.5; });
 
     activeCats.forEach(function (c, i) {
-      var segH = (current[c] / 100) * barH;
+      var segH = animSum > 0 ? (Math.max(0, current[c]) / animSum) * barH : 0;
       if (segH < 1) return;
 
       ctx.fillStyle = CAT_COLORS[c];
@@ -378,13 +384,13 @@
       ctx.fill();
       ctx.globalAlpha = 1;
 
-      // Percentage text inside bar if segment is tall enough
+      // Percentage text inside bar if segment is tall enough (use ACTUAL percentage)
       if (segH > 20) {
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 12px Secular One, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(Math.round(current[c]) + '%', barX + barW / 2, yOffset + segH / 2);
+        ctx.fillText(Math.round(actualPcts[c]) + '%', barX + barW / 2, yOffset + segH / 2);
       }
 
       yOffset += segH;
@@ -396,7 +402,7 @@
     yOffset = PAD.top;
 
     activeCats.forEach(function (c, i) {
-      var segH = (current[c] / 100) * barH;
+      var segH = animSum > 0 ? (Math.max(0, current[c]) / animSum) * barH : 0;
       var segMid = yOffset + segH / 2;
       var labelY = labelYStart + i * labelSpacing + labelSpacing / 2;
 
@@ -428,9 +434,9 @@
       ctx.fillStyle = CAT_COLORS[c];
       ctx.fill();
 
-      // Count and percentage below label
+      // Count and percentage below label (use ACTUAL data, not animated values)
       var countText = (cats[c] || []).length;
-      var pctText = Math.round(current[c]) + '%';
+      var pctText = Math.round(actualPcts[c]) + '%';
       ctx.fillStyle = COLORS.purple;
       ctx.font = '11px Varela Round, sans-serif';
       ctx.fillText(countText + ' מילים · ' + pctText, textRight, labelY + 10);
@@ -605,11 +611,12 @@
     var maxCount = Math.max.apply(null, entries.map(function (e) { return e.count; }));
     var cx = W / 2, cy = H / 2;
     var maxR = Math.min(W, H) * 0.2;
+    var minR = 14;
 
     // Simple spiral layout
     var placed = [];
     entries.forEach(function (e, i) {
-      var r = Math.max(22, (e.count / maxCount) * maxR);
+      var r = Math.max(minR, Math.sqrt(e.count / maxCount) * maxR);
       var angle = i * 2.4 + 0.5;
       var dist = i === 0 ? 0 : 50 + i * 28;
       var x = cx + Math.cos(angle) * dist;
@@ -641,10 +648,12 @@
       ctx.stroke();
       // Label
       ctx.fillStyle = COLORS.deepPurple;
-      ctx.font = 'bold ' + (b.r > 30 ? '13' : '10') + 'px Secular One, sans-serif';
+      var labelSize = b.r > 40 ? '13' : (b.r > 25 ? '11' : '9');
+      ctx.font = 'bold ' + labelSize + 'px Secular One, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(CAT_LABELS[b.entry.key] || b.entry.key, b.x, b.y - 3);
-      ctx.font = 'bold ' + (b.r > 30 ? '16' : '12') + 'px Secular One, sans-serif';
+      var countSize = b.r > 40 ? '16' : (b.r > 25 ? '13' : '10');
+      ctx.font = 'bold ' + countSize + 'px Secular One, sans-serif';
       ctx.fillStyle = COLORS.purple;
       ctx.fillText(b.entry.count, b.x, b.y + 14);
     });
@@ -715,9 +724,18 @@
         var valA = showPct ? (totalA > 0 ? (countA / totalA) * 100 : 0) : countA;
         var valB = showPct ? (totalB > 0 ? (countB / totalB) * 100 : 0) : countB;
 
-        var growth = countA > 0 ? Math.round(((countB - countA) / countA) * 100) : (countB > 0 ? 100 : 0);
-        var growthClass = growth >= 0 ? '' : ' negative';
-        var growthText = (growth >= 0 ? '+' : '') + growth + '%';
+        var growthClass = '';
+        var growthText = '';
+        if (countA > 0) {
+          var growth = Math.round(((countB - countA) / countA) * 100);
+          growthClass = growth < 0 ? ' negative' : '';
+          growthText = (growth >= 0 ? '+' : '') + growth + '%';
+        } else if (countB > 0) {
+          growthText = 'חדש';
+          growthClass = ' new-cat';
+        } else {
+          growthText = '—';
+        }
 
         var row = document.createElement('div');
         row.className = 'period-bar-row';
