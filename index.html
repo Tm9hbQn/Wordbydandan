@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Varela+Round&family=Karantina:wght@300;400;700&family=Suez+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=12">
+  <link rel="stylesheet" href="css/styles.css?v=13">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
 </head>
 <body>
@@ -160,6 +160,17 @@
       >
       <button class="search-clear hidden" id="searchClear" aria-label="נקו חיפוש">✕</button>
     </div>
+    <!-- Filters Bar -->
+    <div class="filters-bar" id="filtersBar">
+      <div class="filter-group" id="monthFilterGroup">
+        <span class="filter-label">חודש:</span>
+        <div class="filter-pills" id="monthFilterPills"></div>
+      </div>
+      <div class="filter-group" id="categoryFilterGroup">
+        <span class="filter-label">קטגוריה:</span>
+        <div class="filter-pills" id="categoryFilterPills"></div>
+      </div>
+    </div>
     <div class="words-grid hidden" id="wordsGrid">
       <!-- Words populated by JS -->
     </div>
@@ -311,7 +322,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
-  <script src="js/app.js?v=13"></script>
+  <script src="js/app.js?v=14"></script>
   <script src="js/vocab-charts.js?v=11"></script>
 </body>
 </html>

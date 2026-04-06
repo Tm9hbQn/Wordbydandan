@@ -675,6 +675,58 @@ body {
   opacity: 1;
 }
 
+/* ===== Filters Bar ===== */
+.filters-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.8rem;
+  color: var(--soft-purple);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.filter-pills {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 50px;
+  border: 1.5px solid var(--pill-color, var(--soft-purple));
+  background: white;
+  color: var(--pill-color, var(--soft-purple));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  background: color-mix(in srgb, var(--pill-color, var(--soft-purple)) 10%, white);
+}
+
+.filter-pill.active {
+  background: var(--pill-color, var(--soft-purple));
+  color: white;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--pill-color, var(--soft-purple)) 30%, transparent);
+}
+
 /* ===== Words Section ===== */
 .words-section {
   position: relative;

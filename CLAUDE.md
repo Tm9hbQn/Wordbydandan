@@ -95,6 +95,9 @@ User Input → submitWord() → duplicate check → age picker → notes → sav
 | `addFlowLinkedTo` | String\|null | Linked word ID during add flow |
 | `editingLinkedTo` | String\|null | Linked word ID during edit |
 | `submitting` | Boolean | Prevents duplicate submissions |
+| `filterMonth` | Number\|null | Selected month filter (null = all) |
+| `filterCategory` | String\|null | Selected CDI category filter (null = all) |
+| `vocabLookup` | Object | Word text → vocabulary.json entry map |
 
 ### Database Schema
 
@@ -283,7 +286,7 @@ Words link via `linked_to` field forming directed graphs:
 grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
 ```
 
-Increment `?v=N` for every file you changed. Current versions: styles.css?v=12, app.js?v=13, vocab-charts.js?v=11.
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=13, app.js?v=14, vocab-charts.js?v=11.
 
 ### 2. RTL Arrows
 

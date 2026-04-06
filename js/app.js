@@ -229,17 +229,39 @@ const timelineAgeText = $('#timelineAgeText');
 
 const searchInput = $('#searchInput');
 const searchClear = $('#searchClear');
+const monthFilterPills = $('#monthFilterPills');
+const categoryFilterPills = $('#categoryFilterPills');
 
 let currentView = 'timeline';
 let searchQuery = '';
 let viewBeforeSearch = null; // remembers view before search auto-switched to grid
 let addFlowLinkedTo = null; // linked_to for the add-word flow
+let filterMonth = null; // selected age_months filter (null = all)
+let filterCategory = null; // selected CDI category filter (null = all)
+let vocabLookup = {}; // word text → vocabulary.json entry (for category lookup)
+
+const CDI_CAT_LABELS = {
+  general_nominals: 'שמות עצם כלליים',
+  specific_nominals: 'שמות עצם ספציפיים',
+  action_words: 'מילות פעולה',
+  modifiers: 'מתארים',
+  personal_social: 'אינטראקציה וחברה',
+};
+
+const CDI_CAT_COLORS = {
+  general_nominals: '#6C5CE7',
+  specific_nominals: '#FF6B9D',
+  action_words: '#4DD0E1',
+  modifiers: '#FFD93D',
+  personal_social: '#CE93D8',
+};
 
 /* ===== Initialize ===== */
 document.addEventListener('DOMContentLoaded', async () => {
   initSupabase();
   setupEventListeners();
   buildAgeOptions(ageOptions, null);
+  await loadVocabLookup();
   await loadWords();
 
   // Debug: show connection status in console
@@ -910,20 +932,110 @@ function getSearchRelevance(query, wordObj) {
 }
 
 function getFilteredWords() {
-  if (!searchQuery) return words;
-  const results = [];
-  words.forEach((w) => {
+  let result = words;
+
+  // Apply month filter
+  if (filterMonth !== null) {
+    result = result.filter((w) => w.age_months === filterMonth);
+  }
+
+  // Apply category filter
+  if (filterCategory !== null) {
+    result = result.filter((w) => {
+      const cat = getWordCategory(w.word);
+      return cat === filterCategory;
+    });
+  }
+
+  // Apply search
+  if (!searchQuery) return result;
+  const scored = [];
+  result.forEach((w) => {
     const rel = getSearchRelevance(searchQuery, w);
-    if (rel.match) results.push({ word: w, score: rel.score });
+    if (rel.match) scored.push({ word: w, score: rel.score });
   });
-  results.sort((a, b) => b.score - a.score);
-  return results.map((r) => r.word);
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map((r) => r.word);
+}
+
+/* ===== Vocabulary Lookup (for category filters) ===== */
+async function loadVocabLookup() {
+  try {
+    const res = await fetch('vocabulary.json?t=' + Date.now());
+    const data = await res.json();
+    vocabLookup = {};
+    data.forEach((entry) => {
+      // Index by the word text (exact match)
+      vocabLookup[entry.word] = entry;
+    });
+  } catch (e) {
+    console.error('Failed to load vocabulary.json for filters:', e);
+    vocabLookup = {};
+  }
+}
+
+function getWordCategory(wordText) {
+  const entry = vocabLookup[wordText];
+  if (entry && entry.cdi_category && entry.cdi_category !== 'unclear') {
+    return entry.cdi_category;
+  }
+  return null; // uncategorized or unclear
+}
+
+/* ===== Filter Pills ===== */
+function buildFilterPills() {
+  // Month pills — only months that have words
+  const monthSet = new Set();
+  words.forEach((w) => {
+    if (w.age_months !== null && w.age_months !== undefined) {
+      monthSet.add(w.age_months);
+    }
+  });
+  const months = [...monthSet].sort((a, b) => a - b);
+
+  monthFilterPills.innerHTML = '';
+  months.forEach((m) => {
+    const pill = document.createElement('button');
+    pill.className = 'filter-pill' + (filterMonth === m ? ' active' : '');
+    pill.textContent = ageMonthsToHebrew(m);
+    pill.addEventListener('click', () => {
+      filterMonth = filterMonth === m ? null : m;
+      buildFilterPills();
+      renderWords();
+    });
+    monthFilterPills.appendChild(pill);
+  });
+
+  // Category pills — only categories that exist in vocabulary data for current words
+  const catSet = new Set();
+  words.forEach((w) => {
+    const cat = getWordCategory(w.word);
+    if (cat) catSet.add(cat);
+  });
+
+  const catOrder = ['general_nominals', 'specific_nominals', 'personal_social', 'action_words', 'modifiers'];
+  const cats = catOrder.filter((c) => catSet.has(c));
+
+  categoryFilterPills.innerHTML = '';
+  cats.forEach((c) => {
+    const pill = document.createElement('button');
+    pill.className = 'filter-pill' + (filterCategory === c ? ' active' : '');
+    pill.style.setProperty('--pill-color', CDI_CAT_COLORS[c]);
+    pill.textContent = CDI_CAT_LABELS[c];
+    pill.addEventListener('click', () => {
+      filterCategory = filterCategory === c ? null : c;
+      buildFilterPills();
+      renderWords();
+    });
+    categoryFilterPills.appendChild(pill);
+  });
 }
 
 /* ===== Load & Render Words ===== */
 async function loadWords() {
   try {
     words = await fetchWords();
+    buildFilterPills();
     renderWords();
   } catch (err) {
     console.error('Error loading words:', err);
