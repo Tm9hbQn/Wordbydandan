@@ -1070,6 +1070,11 @@ function renderWords() {
       card.classList.add('word-card-exact-match');
     }
     card.style.setProperty('--reveal-delay', `${Math.min(i * 0.06, 0.5)}s`);
+    const cat = getWordCategory(w.word);
+    if (cat && CDI_CAT_COLORS[cat]) {
+      card.style.setProperty('--card-accent', CDI_CAT_COLORS[cat]);
+      card.classList.add('word-card-categorized');
+    }
     card.addEventListener('click', () => openEditModal(w));
 
     const wordEl = document.createElement('div');
@@ -1718,11 +1723,21 @@ function renderTimeline() {
 
     wordItemMap.set(w.id, item);
 
+    const cat = getWordCategory(w.word);
+    const catColor = cat && CDI_CAT_COLORS[cat] ? CDI_CAT_COLORS[cat] : null;
+
     const dot = document.createElement('div');
     dot.className = 'timeline-dot';
+    if (catColor) {
+      dot.style.background = catColor;
+    }
 
     const card = document.createElement('div');
     card.className = 'timeline-card';
+    if (catColor) {
+      card.style.setProperty('--card-accent', catColor);
+      card.classList.add('timeline-card-categorized');
+    }
     card.addEventListener('click', () => openEditModal(w));
 
     const wordEl = document.createElement('div');

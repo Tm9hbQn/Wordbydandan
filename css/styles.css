@@ -805,6 +805,10 @@ body {
   transition: height 0.3s ease;
 }
 
+/* Category-based accent color (set via JS --card-accent variable) */
+.word-card-categorized::before { background: var(--card-accent) !important; }
+
+/* Fallback rotation for uncategorized words */
 .word-card:nth-child(5n+1)::before { background: var(--hot-pink); }
 .word-card:nth-child(5n+2)::before { background: var(--teal); }
 .word-card:nth-child(5n+3)::before { background: var(--yellow); }
@@ -1794,6 +1798,15 @@ body {
   50% { transform: scale(1.3); box-shadow: 0 2px 16px rgba(109, 92, 231, 0.35); }
 }
 
+/* Category-based accent for timeline cards */
+.timeline-card-categorized {
+  border-color: color-mix(in srgb, var(--card-accent) 25%, transparent);
+}
+.timeline-card-categorized:hover {
+  border-color: color-mix(in srgb, var(--card-accent) 45%, transparent);
+}
+
+/* Fallback dot rotation for uncategorized words */
 .timeline-item:nth-child(5n+1) .timeline-dot { background: var(--hot-pink); }
 .timeline-item:nth-child(5n+2) .timeline-dot { background: var(--teal); }
 .timeline-item:nth-child(5n+3) .timeline-dot { background: var(--yellow); }

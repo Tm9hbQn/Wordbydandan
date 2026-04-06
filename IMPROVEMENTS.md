@@ -316,3 +316,26 @@ These are good improvements but less urgent. Document for future consideration.
 - [ ] **Fix character appearance** — Eyes, ponytail, smile issues documented in CLAUDE.md.
 - [ ] **Re-integrate to main site** — Once character looks right, add peek-a-boo interaction back.
 - [ ] **Reduce sprite code size** — Current canvas-based sprite system is complex. SVG might be simpler.
+
+---
+
+## Developer TODO — UX & Data Architecture
+
+### 1. Vocabulary Section UX Flow Redesign
+
+- [ ] **1a. Compress/redesign the user flow to vocabulary analysis** — The current path from the word list to the vocabulary charts section is long and not intuitive. Need to think about a better navigation approach (e.g., tabbed interface, collapsible sections, or a dedicated vocabulary dashboard route).
+- [ ] **1b. Improve section navigation bars** — Redesign the sticky nav and section transitions to make it easier to move between word list, trends, and vocabulary analysis. Consider better visual cues, scroll indicators, or a floating nav.
+
+### 2. Unify Category Visualizations
+
+- [ ] **Consider merging the category evolution chart (stacked bars over time) with the category distribution chart (proportional bar)** — Both show category breakdown but from different angles. A unified interactive visualization (e.g., a single chart with time slider that also shows proportions) could reduce cognitive load and screen real estate.
+
+### 3. Category Editing & Data Sync
+
+- [ ] **3a. Add category editing in the word edit modal** — Allow changing a word's CDI category directly from the edit modal. The change should update both `vocabulary.json` and recalculate all category counts and chart data in real-time.
+- [ ] **3b. Database & data architecture review** — Consider:
+  - Adding a `cdi_category` column to the `words` table in Supabase so category data lives in the DB (not just vocabulary.json).
+  - Whether to add summary/aggregation tables for pre-computed category stats (faster reads) vs. computing on the client (simpler, current approach).
+  - Trade-offs: client-side computation is fine for <500 words but may need server-side aggregation as data grows.
+  - Additional useful DB columns: `sub_category`, `target_meaning`, `phonetic_notes` — currently only in vocabulary.json.
+  - Consider a `word_analytics` view or materialized table that pre-joins word data with category info for the charts.

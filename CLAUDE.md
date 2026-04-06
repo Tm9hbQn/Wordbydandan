@@ -50,11 +50,11 @@ Understanding this prevents 90% of "it doesn't work" issues:
 
 ```
 1. Google Fonts (preconnect + stylesheet)
-2. css/styles.css?v=12          ← all visual styles
+2. css/styles.css?v=14          ← all visual styles
 3. HTML body renders
 4. Supabase JS SDK (CDN)        ← must load before app.js
 5. Lucide Icons (CDN)           ← must load before app.js calls lucide.createIcons()
-6. js/app.js?v=13               ← main logic, runs on DOMContentLoaded
+6. js/app.js?v=15               ← main logic, runs on DOMContentLoaded
 7. js/vocab-charts.js?v=11      ← chart IIFE, fetches vocabulary.json on load
 ```
 
@@ -195,9 +195,13 @@ Most important to understand:
 - `dotPulseTimeline` — timeline dot pulse
 - Scroll-reveal system: `.reveal-on-scroll` + `.revealed` class + `--reveal-delay` CSS var
 
-### Word Card Color Rotation
+### Word Card Color System
 
-Cards cycle through 5 colors via `:nth-child(5n+X)`:
+**Categorized words** use their CDI category color (from `CDI_CAT_COLORS`) via `--card-accent` CSS variable:
+- Grid cards: `.word-card-categorized` class → `::before` uses `var(--card-accent)`
+- Timeline cards: `.timeline-card-categorized` class → border tint; dot background set inline
+
+**Uncategorized words** fall back to 5-color rotation via `:nth-child(5n+X)`:
 1. pink, 2. teal, 3. yellow, 4. purple, 5. coral
 
 ## RTL Rules (CRITICAL)
@@ -286,7 +290,7 @@ Words link via `linked_to` field forming directed graphs:
 grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
 ```
 
-Increment `?v=N` for every file you changed. Current versions: styles.css?v=13, app.js?v=14, vocab-charts.js?v=11.
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=14, app.js?v=15, vocab-charts.js?v=11.
 
 ### 2. RTL Arrows
 
