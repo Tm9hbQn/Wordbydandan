@@ -604,7 +604,7 @@
   // INITIALIZATION
   // ==========================================
   function init() {
-    fetch('vocabulary.json')
+    fetch('vocabulary.json?t=' + Date.now())
       .then(function (r) { return r.json(); })
       .then(function (data) {
         vocabData = data.filter(function (w) { return w.age_in_months <= BABY_MAX_AGE; });
