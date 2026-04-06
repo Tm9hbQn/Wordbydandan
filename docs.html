@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>תיעוד הפרויקט - המילים הראשונות של דניאלה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Varela+Round&family=Karantina:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+  <style>
+    :root {
+      --pink: #FFE5EC; --hot-pink: #FF6B9D; --peach: #FFF3E0; --teal: #4ECDC4;
+      --mint: #E8F5E9; --yellow: #FFD93D; --baby-blue: #E3F2FD; --coral: #FF8A80;
+      --lavender: #F3E5F5; --deep-purple: #2D1B69; --bg: #FFF9FB; --soft-purple: #6C5CE7;
+      --card-shadow: 0 4px 20px rgba(109, 92, 231, 0.1);
+      --card-shadow-hover: 0 8px 30px rgba(109, 92, 231, 0.2);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Varela Round', sans-serif; background: var(--bg); color: #333; min-height: 100vh; }
+    .back-link {
+      position: fixed; top: 1rem; left: 1rem; z-index: 100;
+      background: white; border-radius: 50%; width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--card-shadow); text-decoration: none; font-size: 1.3rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .back-link:hover { transform: scale(1.1); box-shadow: var(--card-shadow-hover); }
+    header {
+      background: linear-gradient(135deg, var(--lavender), var(--pink));
+      padding: 2.5rem 1rem 2rem; text-align: center;
+    }
+    header h1 { font-family: 'Secular One', sans-serif; color: var(--deep-purple); font-size: 2rem; margin-bottom: 0.3rem; }
+    header p { color: #666; font-size: 0.95rem; }
+    .tabs {
+      display: flex; justify-content: center; gap: 0.5rem; padding: 1.2rem 1rem 0;
+      flex-wrap: wrap; max-width: 800px; margin: 0 auto;
+    }
+    .tab-btn {
+      font-family: 'Varela Round', sans-serif; border: 2px solid var(--lavender);
+      background: white; color: var(--deep-purple); padding: 0.55rem 1.3rem;
+      border-radius: 999px; cursor: pointer; font-size: 0.95rem;
+      transition: all 0.25s; font-weight: 600;
+    }
+    .tab-btn:hover { border-color: var(--soft-purple); background: var(--lavender); }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--hot-pink), var(--soft-purple));
+      color: white; border-color: transparent;
+    }
+    .content-area {
+      max-width: 800px; margin: 1.5rem auto 3rem; padding: 0 1rem;
+    }
+    .doc-card {
+      background: white; border-radius: 1.2rem; padding: 2rem;
+      box-shadow: var(--card-shadow); display: none; animation: fadeIn 0.3s;
+    }
+    .doc-card.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .loading { text-align: center; padding: 3rem; color: #999; }
+    /* Markdown styles */
+    .md h1, .md h2, .md h3, .md h4 { font-family: 'Secular One', sans-serif; color: var(--deep-purple); margin: 1.6rem 0 0.6rem; line-height: 1.4; }
+    .md h1 { font-size: 1.7rem; border-bottom: 3px solid var(--lavender); padding-bottom: 0.5rem; }
+    .md h2 { font-size: 1.35rem; border-bottom: 2px solid var(--pink); padding-bottom: 0.3rem; }
+    .md h3 { font-size: 1.15rem; }
+    .md h4 { font-size: 1.05rem; }
+    .md p { margin: 0.6rem 0; line-height: 1.75; }
+    .md strong { color: var(--deep-purple); }
+    .md code {
+      background: var(--lavender); color: var(--soft-purple); padding: 0.15em 0.45em;
+      border-radius: 0.3rem; font-size: 0.88em; font-family: monospace;
+    }
+    .md pre {
+      background: var(--deep-purple); color: #e0d4ff; border-radius: 0.8rem;
+      padding: 1.2rem; margin: 1rem 0; overflow-x: auto; direction: ltr; text-align: left;
+    }
+    .md pre code { background: none; color: inherit; padding: 0; font-size: 0.85rem; line-height: 1.6; }
+    .md-table-wrap { overflow-x: auto; margin: 1rem 0; border-radius: 0.8rem; box-shadow: var(--card-shadow); }
+    .md table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .md th { background: var(--lavender); color: var(--deep-purple); font-family: 'Secular One', sans-serif; padding: 0.7rem; text-align: right; }
+    .md td { padding: 0.6rem 0.7rem; border-bottom: 1px solid #f0e6f6; }
+    .md tr:nth-child(even) td { background: #fdf8ff; }
+    .md ul, .md ol { margin: 0.5rem 0; padding-right: 1.5rem; }
+    .md li { margin: 0.3rem 0; line-height: 1.65; }
+    .md li ul { margin: 0.2rem 0; }
+    .md blockquote {
+      border-right: 4px solid var(--soft-purple); background: var(--lavender);
+      padding: 0.8rem 1.2rem; margin: 1rem 0; border-radius: 0 0.6rem 0.6rem 0;
+    }
+    .md hr { border: none; border-top: 2px solid var(--pink); margin: 1.5rem 0; }
+    .md a { color: var(--soft-purple); text-decoration: underline; }
+    .md a:hover { color: var(--hot-pink); }
+    .md .checkbox { margin-left: 0.4rem; }
+    /* Changelog */
+    .changelog-date {
+      font-family: 'Secular One', sans-serif; color: var(--deep-purple);
+      font-size: 1.2rem; margin: 1.8rem 0 0.6rem; padding-bottom: 0.3rem;
+      border-bottom: 2px solid var(--pink); display: flex; align-items: center; gap: 0.5rem;
+    }
+    .changelog-date:first-child { margin-top: 0; }
+    .changelog-list { list-style: none; padding: 0; }
+    .changelog-list li {
+      padding: 0.55rem 0.8rem; margin: 0.3rem 0; border-radius: 0.6rem;
+      background: var(--lavender); font-size: 0.92rem; line-height: 1.6;
+      border-right: 3px solid var(--soft-purple);
+    }
+    .changelog-list li:nth-child(even) { background: var(--pink); border-right-color: var(--hot-pink); }
+    footer { text-align: center; padding: 1.5rem; color: #999; font-size: 0.85rem; }
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.5rem; }
+      .doc-card { padding: 1.2rem; }
+      .tab-btn { font-size: 0.85rem; padding: 0.45rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link" title="חזרה לאתר">←</a>
+  <header>
+    <h1>📋 תיעוד הפרויקט</h1>
+    <p>המילים הראשונות של דניאלה — מסמכי עזר ושינויים</p>
+  </header>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="guide">מדריך פרויקט</button>
+    <button class="tab-btn" data-tab="roadmap">רודמאפ שיפורים</button>
+    <button class="tab-btn" data-tab="changelog">צ'יינג'לוג</button>
+  </div>
+  <div class="content-area">
+    <div class="doc-card active" id="tab-guide"><div class="loading">טוען...</div></div>
+    <div class="doc-card" id="tab-roadmap"><div class="loading">טוען...</div></div>
+    <div class="doc-card" id="tab-changelog"></div>
+  </div>
+  <footer>המילים הראשונות של דניאלה &copy; 2024-2026</footer>
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Markdown parser
+    function parseMd(md) {
+      const lines = md.split('\n');
+      let html = '', inCode = false, codeBuf = '', inList = 0, inTable = false;
+
+      function inline(t) {
+        t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+        t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+        t = t.replace(/\[x\]/gi, '<input type="checkbox" checked disabled class="checkbox">');
+        t = t.replace(/\[ \]/g, '<input type="checkbox" disabled class="checkbox">');
+        return t;
+      }
+
+      function closeList() { if (inList > 0) { html += '</ul>'.repeat(inList); inList = 0; } }
+      function closeTable() { if (inTable) { html += '</tbody></table></div>'; inTable = false; } }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Code blocks
+        if (line.trimStart().startsWith('```')) {
+          if (inCode) { html += '<pre><code>' + codeBuf.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></pre>'; codeBuf = ''; }
+          inCode = !inCode;
+          continue;
+        }
+        if (inCode) { codeBuf += (codeBuf ? '\n' : '') + line; continue; }
+
+        const trimmed = line.trim();
+
+        // Empty line
+        if (!trimmed) { closeList(); closeTable(); continue; }
+
+        // HR
+        if (/^-{3,}$/.test(trimmed)) { closeList(); closeTable(); html += '<hr>'; continue; }
+
+        // Headings
+        const hm = trimmed.match(/^(#{1,4})\s+(.+)/);
+        if (hm) { closeList(); closeTable(); const lvl = hm[1].length; html += `<h${lvl}>${inline(hm[2])}</h${lvl}>`; continue; }
+
+        // Table
+        if (trimmed.includes('|') && trimmed.startsWith('|')) {
+          const cells = trimmed.split('|').filter(c => c.trim() !== '').map(c => c.trim());
+          if (cells.length === 0) continue;
+          // Separator row
+          if (cells.every(c => /^[-:]+$/.test(c))) continue;
+          if (!inTable) {
+            closeList();
+            html += '<div class="md-table-wrap"><table><thead><tr>' + cells.map(c => '<th>' + inline(c) + '</th>').join('') + '</tr></thead><tbody>';
+            inTable = true;
+          } else {
+            html += '<tr>' + cells.map(c => '<td>' + inline(c) + '</td>').join('') + '</tr>';
+          }
+          continue;
+        }
+        closeTable();
+
+        // Blockquote
+        if (trimmed.startsWith('>')) {
+          closeList();
+          html += '<blockquote>' + inline(trimmed.slice(1).trim()) + '</blockquote>';
+          continue;
+        }
+
+        // List items
+        const lm = line.match(/^(\s*)[-*]\s+(.*)/);
+        if (lm) {
+          const depth = Math.floor(lm[1].length / 2) + 1;
+          while (inList < depth) { html += '<ul>'; inList++; }
+          while (inList > depth) { html += '</ul>'; inList--; }
+          html += '<li>' + inline(lm[2]) + '</li>';
+          continue;
+        }
+        closeList();
+
+        // Paragraph
+        html += '<p>' + inline(trimmed) + '</p>';
+      }
+      closeList(); closeTable();
+      if (inCode) html += '<pre><code>' + codeBuf.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></pre>';
+      return html;
+    }
+
+    // Load markdown files
+    async function loadMd(file, tabId) {
+      const el = document.getElementById(tabId);
+      try {
+        const res = await fetch(file + '?t=' + Date.now());
+        if (!res.ok) throw new Error(res.status);
+        const text = await res.text();
+        el.innerHTML = '<div class="md">' + parseMd(text) + '</div>';
+      } catch (e) {
+        el.innerHTML = '<div class="loading">לא ניתן לטעון את הקובץ: ' + file + '</div>';
+      }
+    }
+    loadMd('CLAUDE.md', 'tab-guide');
+    loadMd('IMPROVEMENTS.md', 'tab-roadmap');
+
+    // Changelog (hardcoded)
+    const changelog = [
+      { date: '06.04.2026', items: [
+        'rebuild CLAUDE.md from scratch + create optimization roadmap',
+        'cache-bust אוטומטי ל-vocabulary.json + עדכון v11',
+        'הוספת 20 מילים חדשות לvocabulary.json עם סיווג CDI',
+        'cleanup: remove dead bubble map and period comparison code',
+        'feat: replace add-flow link dropdown with smart fuzzy search',
+        'feat: revamp trends section - delta chart, dashed lines, cursor',
+        'docs: update CLAUDE.md with recent fixes and new patterns',
+        'fix: timeline link click, custom delete modal, period comparison labels',
+        'fix: data classification and visualization bugs in charts',
+      ]},
+      { date: '05.04.2026', items: [
+        'Add smart search, duplicate detection, word linking, period comparison, wave chart',
+        'reclassify all 65 DB words with full CDI taxonomy (was 38)',
+        'reclassify all CDI words to 5 main categories per MacArthur-Bates standard',
+        'Fix bubble chart to use CDI main categories instead of sub-categories',
+        'Update CLAUDE.md: document CDI categories, vocab-charts.js, planned improvements',
+      ]},
+      { date: '04.04.2026', items: [
+        'Enhance vocabulary analysis with CDI categories and new proportional chart',
+        'Rebuild vocab charts: stacked bars, smooth tooltips, site palette',
+        'Add vocabulary analysis with 4 interactive chart cards',
+        'Fix view toggle colors and timeline scroll overshoot',
+        'Improve nav hierarchy: section tabs bigger, view toggle smaller',
+        'Fix timeline chain navigation and modal close scroll',
+        'Update CLAUDE.md section nav documentation',
+        'Move section nav inside words section, make sticky and accessible',
+        'Rebuild tests.html with diverse baby styles and proper interactions',
+        'Fix CSS/JS cache busters, simplify load-more text',
+        'Bump cache buster to v=5, add critical checklist to CLAUDE.md',
+        'Add section nav, timeline pagination, pixel art test page',
+        'UI improvements: trends title, stat card icon, shimmer, RTL arrows, docs',
+        'Fix baby sprite, evolution arrows RTL, and animation positioning',
+        'Add pixel art baby character with multiple interactive animations',
+        'Link search results above input + timeline evolution visual connections',
+        'Fix evolution chain direction: youngest on right, oldest on left',
+        'Fix evolution chain to RTL arrows with horizontal mini-timeline',
+        'Add decorative dividers and trends growth visualization',
+        'Fix critical: rename supabase client var to avoid global name collision',
+        'Use explicit UMD bundle path and add cache-busting for app.js',
+        'Fix words not syncing across devices - load Supabase SDK synchronously',
+        'Add export button only (no other changes)',
+        'Fix Supabase SDK loading issues (multiple attempts)',
+        'Convert word click to view-first card with edit button',
+        "Don't double-count evolution variants in word count",
+        'Add evolution chain viewer, reorder, fix timeline line',
+        'Fix search visibility, timeline scroll escape, and link search',
+        'Move search bar below view toggle (grid/timeline)',
+        'Fix timeline scroll propagation and tighten mobile search layout',
+        'Add word evolution linking',
+        'Hide עכשיו button, add fuzzy search for words',
+        'Make timeline a scrollable container with momentum scrolling',
+        'Fix: ensure all words are displayed in both views',
+      ]},
+    ];
+    const clEl = document.getElementById('tab-changelog');
+    let clHtml = '';
+    changelog.forEach(g => {
+      clHtml += `<div class="changelog-date">📅 ${g.date}</div><ul class="changelog-list">`;
+      g.items.forEach(item => { clHtml += `<li>${item}</li>`; });
+      clHtml += '</ul>';
+    });
+    clEl.innerHTML = clHtml;
+  </script>
+</body>
+</html>

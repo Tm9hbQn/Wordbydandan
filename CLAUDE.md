@@ -27,7 +27,8 @@
 
 ```
 /
-├── index.html              # Single-page app (315 lines)
+├── index.html              # Single-page app (~317 lines)
+├── docs.html               # Documentation viewer — renders CLAUDE.md, IMPROVEMENTS.md, changelog (~307 lines)
 ├── tests.html              # Pixel art character studio (369 lines, NOT linked from main)
 ├── vocabulary.json         # Static CDI-categorized vocabulary (85 words, ages 10-16 months)
 ├── CLAUDE.md               # THIS FILE — read before every task
@@ -142,7 +143,7 @@ All DB operations follow this pattern:
 | 9 | Edit Modal | `#editModal` | View/Edit toggle, z-index 200 |
 | 10 | Evo Modal | `#evoModal` | Vertical chain with reorder, z-index 200 |
 | 11 | Delete Modal | `#deleteConfirmModal` | Custom styled, NEVER use native confirm() |
-| 12 | Footer | `.main-footer` | Copyright, export btn, tests.html link |
+| 12 | Footer | `.main-footer` | Copyright, export btn, tests.html link, docs.html link |
 
 ## Design System
 
