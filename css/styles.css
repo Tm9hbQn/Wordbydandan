@@ -1001,6 +1001,43 @@ body {
   background: #FFCDD2;
 }
 
+.delete-confirm-content {
+  text-align: center;
+  padding: 2rem 1.5rem 1.5rem;
+  max-width: 340px;
+}
+
+.delete-confirm-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.delete-confirm-text {
+  font-family: 'Secular One', sans-serif;
+  font-size: 1.2rem;
+  color: var(--deep-purple);
+  margin-bottom: 0.3rem;
+}
+
+.delete-confirm-sub {
+  font-family: 'Karantina', sans-serif;
+  font-size: 1.6rem;
+  color: var(--soft-purple);
+  margin-bottom: 1.2rem;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+
+.delete-confirm-actions .modal-cancel-btn,
+.delete-confirm-actions .modal-delete-btn {
+  flex: 1;
+  max-width: 140px;
+}
+
 .modal-save-btn {
   background: linear-gradient(135deg, var(--hot-pink), var(--soft-purple));
   color: white;
@@ -2672,6 +2709,21 @@ body::-webkit-scrollbar-thumb {
 
 .period-growth.negative {
   color: var(--coral);
+}
+
+.period-growth.new-cat {
+  color: var(--soft-purple);
+}
+
+.period-bar-val {
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: white;
+  padding: 0 6px;
+  line-height: 22px;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 /* ===== Wave Chart Styles ===== */

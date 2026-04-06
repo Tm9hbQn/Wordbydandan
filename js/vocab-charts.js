@@ -737,12 +737,15 @@
           growthText = '—';
         }
 
+        var displayA = showPct ? Math.round(valA) + '%' : countA;
+        var displayB = showPct ? Math.round(valB) + '%' : countB;
+
         var row = document.createElement('div');
         row.className = 'period-bar-row';
         row.innerHTML = '<div class="period-bar-label">' + CAT_LABELS[c] + '</div>' +
           '<div class="period-bar-wrap">' +
-            '<div class="period-bar period-bar-a" style="width: 0%"></div>' +
-            '<div class="period-bar period-bar-b" style="width: 0%"></div>' +
+            '<div class="period-bar period-bar-a" style="width: 0%"><span class="period-bar-val">' + displayA + '</span></div>' +
+            '<div class="period-bar period-bar-b" style="width: 0%"><span class="period-bar-val">' + displayB + '</span></div>' +
           '</div>' +
           '<div class="period-growth' + growthClass + '">' + growthText + '</div>';
         barsEl.appendChild(row);

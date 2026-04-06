@@ -1211,17 +1211,47 @@ async function handleEditSave() {
   }
 }
 
-async function handleDelete() {
-  if (!confirm('למחוק את המילה?')) return;
+function handleDelete() {
+  const word = words.find(w => w.id === editingWordId);
+  const deleteModal = $('#deleteConfirmModal');
+  const deleteWordEl = $('#deleteConfirmWord');
+  const confirmBtn = $('#deleteConfirmBtn');
+  const cancelBtn = $('#deleteCancelBtn');
 
-  try {
-    await deleteWord(editingWordId);
-    closeEditModal();
-    await loadWords();
-    showSuccess('נמחק 🗑️');
-  } catch (err) {
-    console.error('Error deleting word:', err);
+  if (deleteWordEl && word) deleteWordEl.textContent = word.word;
+  deleteModal.classList.remove('hidden');
+
+  function cleanup() {
+    confirmBtn.removeEventListener('click', onConfirm);
+    cancelBtn.removeEventListener('click', onCancel);
+    deleteModal.removeEventListener('click', onOverlay);
   }
+
+  async function onConfirm() {
+    cleanup();
+    deleteModal.classList.add('hidden');
+    try {
+      await deleteWord(editingWordId);
+      closeEditModal();
+      await loadWords();
+      showSuccess('נמחק 🗑️');
+    } catch (err) {
+      console.error('Error deleting word:', err);
+    }
+  }
+
+  function onCancel() {
+    cleanup();
+    deleteModal.classList.add('hidden');
+  }
+
+  function onOverlay(e) {
+    if (e.target === deleteModal) onCancel();
+  }
+
+  confirmBtn.addEventListener('click', onConfirm);
+  cancelBtn.addEventListener('click', onCancel);
+  deleteModal.addEventListener('click', onOverlay);
 }
 
 /* ===== Evolution Chain Modal ===== */
@@ -1538,23 +1568,7 @@ function renderTimeline() {
         linkEl.textContent = tlChain.map((c) => c.word).join(' ← ');
         linkEl.addEventListener('click', (e) => {
           e.stopPropagation();
-          // Scroll to the nearest neighbor in the timeline
-          const neighbors = wordNeighbors.get(w.id) || [];
-          for (const nId of neighbors) {
-            let neighborEl = timelineTrack.querySelector(`[data-word-id="${nId}"]`);
-            if (!neighborEl) {
-              // Word not loaded yet - load all words and retry
-              timelineDisplayCount = Infinity;
-              renderTimeline();
-              neighborEl = timelineTrack.querySelector(`[data-word-id="${nId}"]`);
-            }
-            if (neighborEl) {
-              scrollToTimelineItem(neighborEl);
-              neighborEl.classList.add('timeline-item-highlight');
-              setTimeout(() => neighborEl.classList.remove('timeline-item-highlight'), 1500);
-              break;
-            }
-          }
+          openEvoModal(w.id);
         });
         card.appendChild(linkEl);
       }
