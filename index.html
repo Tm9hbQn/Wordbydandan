@@ -222,8 +222,8 @@
 
     <!-- Trends Tabs -->
     <div class="trends-tabs" id="trendsTabs">
-      <button class="trends-tab active" data-tab="growthView">צמיחה</button>
-      <button class="trends-tab" data-tab="acquisitionView">ניתוח רכישה</button>
+      <button class="trends-tab active" data-tab="growthView">📅 לפי חודשים</button>
+      <button class="trends-tab" data-tab="acquisitionView">🔢 לפי סדר רכישה</button>
     </div>
 
     <!-- Tab: Growth (existing charts) -->
@@ -245,19 +245,18 @@
 
     <!-- Tab: Acquisition Analysis (new charts) -->
     <div class="trends-tab-content" id="acquisitionView">
-      <!-- Chapter 1: Acquisition Stream -->
-      <div class="acq-card reveal-on-scroll" id="acqStream">
-        <h3 class="acq-card-title" id="acqStreamTitle"></h3>
-        <p class="acq-card-subtitle">התפלגות מצטברת של קטגוריות לפי סדר רכישת מילים</p>
-        <div class="acq-chart-wrap"><canvas id="acqStreamCanvas"></canvas></div>
-        <div class="acq-tooltip" id="acqStreamTip"></div>
-        <div class="acq-legend" id="acqStreamLeg"></div>
+      <!-- Chapter 1: Noun Bias Trend -->
+      <div class="acq-card reveal-on-scroll" id="acqNounBias">
+        <h3 class="acq-card-title" id="acqNounBiasTitle"></h3>
+        <p class="acq-card-subtitle acq-card-desc" id="acqNounBiasDesc">איך משתנה היחס בין שמות עצם לשאר הקטגוריות ככל שאוצר המילים גדל</p>
+        <div class="acq-chart-wrap"><canvas id="acqNounBiasCanvas"></canvas></div>
+        <div class="acq-tooltip" id="acqNounBiasTip"></div>
       </div>
 
       <!-- Chapter 2: Rolling Category Mix -->
       <div class="acq-card reveal-on-scroll" id="acqPulse">
         <h3 class="acq-card-title" id="acqPulseTitle"></h3>
-        <p class="acq-card-subtitle">הרכב כל קבוצת מילים לפי סדר הרכישה</p>
+        <p class="acq-card-subtitle">מה ההרכב של כל קבוצת מילים? לחצו על שורה לפירוט</p>
         <div class="acq-slider-row">
           <span class="acq-slider-label">הציגו בקבוצות של</span>
           <div class="acq-window-btns" id="acqWindowBtns">
@@ -277,7 +276,7 @@
       <!-- Chapter 3: Milestone Comparison -->
       <div class="acq-card reveal-on-scroll" id="acqMilestones">
         <h3 class="acq-card-title" id="acqMilestonesTitle"></h3>
-        <p class="acq-card-subtitle">השוואת הרכב אוצר המילים באבני דרך שונות</p>
+        <p class="acq-card-subtitle">איך השתנה ההרכב ככל שנוספו מילים - לחצו על אבן דרך לפירוט</p>
         <div class="acq-chart-wrap"><canvas id="acqMilestonesCanvas"></canvas></div>
         <div class="acq-tooltip" id="acqMilestonesTip"></div>
         <div class="acq-legend" id="acqMilestonesLeg"></div>
@@ -286,7 +285,7 @@
       <!-- Chapter 4: Insights -->
       <div class="acq-card reveal-on-scroll" id="acqInsights">
         <h3 class="acq-card-title">תובנות מהנתונים</h3>
-        <p class="acq-card-subtitle">המנוע מזהה דפוסים מעניינים ברכישת המילים</p>
+        <p class="acq-card-subtitle">דפוסים מעניינים שהמנוע זיהה ברכישת המילים</p>
         <div class="acq-insights-list" id="acqInsightsList"></div>
       </div>
     </div>
@@ -398,8 +397,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
-  <script src="js/app.js?v=17"></script>
+  <script src="js/app.js?v=18"></script>
   <script src="js/acquisition-analysis.js?v=1"></script>
-  <script src="js/vocab-charts.js?v=11"></script>
+  <script src="js/vocab-charts.js?v=12"></script>
 </body>
 </html>

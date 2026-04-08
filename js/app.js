@@ -2598,7 +2598,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (target) {
         target.classList.add('active');
         if (targetId === 'acquisitionView') {
-          renderAcquisitionCharts();
+          // Delay rendering to ensure container is visible (display:block applied)
+          requestAnimationFrame(() => renderAcquisitionCharts());
+        }
+        if (targetId === 'growthView') {
+          // Re-render growth charts in case they need to resize
+          requestAnimationFrame(() => renderTrends());
         }
       }
     });
@@ -2641,9 +2646,8 @@ function renderAcquisitionCharts() {
     });
   }
 
-  // ---- CHAPTER 1: Acquisition Stream (stacked area) ----
-  drawAcqStream(ordered, AA);
-  buildAcqLegend('acqStreamLeg');
+  // ---- CHAPTER 1: Noun Bias Trend ----
+  drawAcqNounBias(ordered, AA);
 
   // ---- CHAPTER 2: Rolling Category Mix ----
   drawAcqPulse(ordered, AA);
@@ -2660,17 +2664,19 @@ function renderAcquisitionCharts() {
   requestAnimationFrame(() => observeRevealElements());
 }
 
-/* ===== Chapter 1: Acquisition Stream ===== */
-function drawAcqStream(ordered, AA) {
-  const canvas = document.getElementById('acqStreamCanvas');
-  const titleEl = document.getElementById('acqStreamTitle');
+/* ===== Chapter 1: Noun Bias Trend ===== */
+function drawAcqNounBias(ordered, AA) {
+  const canvas = document.getElementById('acqNounBiasCanvas');
+  const titleEl = document.getElementById('acqNounBiasTitle');
+  const descEl = document.getElementById('acqNounBiasDesc');
   if (!canvas) return;
 
-  if (titleEl) titleEl.textContent = AA.getStreamTitle(ordered);
+  const nounData = AA.getNounBiasData(ordered);
+  if (titleEl) titleEl.textContent = AA.getNounBiasTitle(nounData);
 
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.parentElement.offsetWidth;
-  const H = 280;
+  const H = 260;
   canvas.width = W * dpr;
   canvas.height = H * dpr;
   canvas.style.width = W + 'px';
@@ -2678,113 +2684,111 @@ function drawAcqStream(ordered, AA) {
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
 
-  const PAD = { top: 16, right: 12, bottom: 36, left: 38 };
+  const PAD = { top: 16, right: 16, bottom: 36, left: 42 };
   const cW = W - PAD.left - PAD.right;
   const cH = H - PAD.top - PAD.bottom;
-  const n = ordered.length;
+  const n = nounData.length;
+  if (n < 2) return;
 
-  // Build cumulative stacks
-  const stacks = [];
-  const cumulCounts = {};
-  AA.CAT_ORDER.forEach(c => { cumulCounts[c] = 0; });
-  let maxStack = 0;
-
-  ordered.forEach((w, i) => {
-    if (w.category && cumulCounts.hasOwnProperty(w.category)) {
-      cumulCounts[w.category]++;
-    }
-    const row = {};
-    let total = 0;
-    AA.CAT_ORDER.forEach(c => {
-      row[c] = cumulCounts[c];
-      total += cumulCounts[c];
-    });
-    row._total = total;
-    if (total > maxStack) maxStack = total;
-    stacks.push(row);
-  });
-
-  const yMax = Math.ceil(maxStack / 5) * 5 || 5;
   function xPos(i) { return PAD.left + (i / Math.max(n - 1, 1)) * cW; }
-  function yPos(v) { return PAD.top + cH - (v / yMax) * cH; }
+  function yPos(v) { return PAD.top + cH - (v / 100) * cH; }
 
   ctx.clearRect(0, 0, W, H);
 
-  // Grid
+  // Grid lines at 25% intervals
   ctx.strokeStyle = 'rgba(108,92,231,0.08)';
   ctx.lineWidth = 1;
-  for (let v = 0; v <= yMax; v += Math.max(1, Math.floor(yMax / 4))) {
+  for (let v = 0; v <= 100; v += 25) {
     ctx.beginPath();
     ctx.moveTo(PAD.left, yPos(v));
     ctx.lineTo(W - PAD.right, yPos(v));
     ctx.stroke();
     ctx.fillStyle = 'rgba(108,92,231,0.5)';
-    ctx.font = '11px Varela Round, sans-serif';
+    ctx.font = '10px Varela Round, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(v, PAD.left - 6, yPos(v) + 4);
+    ctx.fillText(v + '%', PAD.left - 6, yPos(v) + 4);
   }
 
-  // X-axis labels
+  // 50% reference line (dashed, prominent)
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,107,157,0.3)';
+  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, yPos(50));
+  ctx.lineTo(W - PAD.right, yPos(50));
+  ctx.stroke();
+  ctx.restore();
+
+  // X-axis labels (milestone word numbers)
   const milestones = AA.getDynamicMilestones(n);
-  // Always show word 1 label
   ctx.fillStyle = 'rgba(108,92,231,0.6)';
   ctx.font = '10px Varela Round, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('1', xPos(0), H - PAD.bottom + 16);
-
   milestones.forEach(m => {
-    const x = xPos(m - 1);
-    ctx.fillStyle = 'rgba(108,92,231,0.6)';
-    ctx.fillText(m, x, H - PAD.bottom + 16);
-    // Dashed milestone line
-    ctx.save();
-    ctx.strokeStyle = 'rgba(108,92,231,0.15)';
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(x, PAD.top);
-    ctx.lineTo(x, PAD.top + cH);
-    ctx.stroke();
-    ctx.restore();
+    ctx.fillText(m, xPos(m - 1), H - PAD.bottom + 16);
   });
 
-  // Draw stacked areas
-  const reversedCats = AA.CAT_ORDER.slice().reverse();
-  const baseStack = new Array(n).fill(0);
+  // Gradient fill under the line
+  const grad = ctx.createLinearGradient(0, PAD.top, 0, PAD.top + cH);
+  grad.addColorStop(0, 'rgba(108,92,231,0.2)');
+  grad.addColorStop(1, 'rgba(108,92,231,0.02)');
 
-  reversedCats.forEach(c => {
-    const tops = [];
-    const bottoms = [];
-    for (let i = 0; i < n; i++) {
-      const bottom = baseStack[i];
-      const top = bottom + (stacks[i][c] || 0);
-      bottoms.push({ x: xPos(i), y: yPos(bottom) });
-      tops.push({ x: xPos(i), y: yPos(top) });
-      baseStack[i] = top;
-    }
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(nounData[0].nounPct));
+  for (let i = 1; i < n; i++) {
+    const cpx = (xPos(i - 1) + xPos(i)) / 2;
+    ctx.bezierCurveTo(cpx, yPos(nounData[i - 1].nounPct), cpx, yPos(nounData[i].nounPct), xPos(i), yPos(nounData[i].nounPct));
+  }
+  // Close area
+  ctx.lineTo(xPos(n - 1), yPos(0));
+  ctx.lineTo(xPos(0), yPos(0));
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
 
-    ctx.fillStyle = AA.CAT_COLORS[c];
-    ctx.globalAlpha = 0.75;
+  // The line itself
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(nounData[0].nounPct));
+  for (let i = 1; i < n; i++) {
+    const cpx = (xPos(i - 1) + xPos(i)) / 2;
+    ctx.bezierCurveTo(cpx, yPos(nounData[i - 1].nounPct), cpx, yPos(nounData[i].nounPct), xPos(i), yPos(nounData[i].nounPct));
+  }
+  ctx.strokeStyle = '#6C5CE7';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Start and end dots
+  const startPct = nounData[0].nounPct;
+  const endPct = nounData[n - 1].nounPct;
+  [[0, startPct], [n - 1, endPct]].forEach(([idx, pct]) => {
     ctx.beginPath();
-    ctx.moveTo(tops[0].x, tops[0].y);
-    for (let i = 1; i < tops.length; i++) {
-      const cpx = (tops[i - 1].x + tops[i].x) / 2;
-      ctx.bezierCurveTo(cpx, tops[i - 1].y, cpx, tops[i].y, tops[i].x, tops[i].y);
-    }
-    for (let j = bottoms.length - 1; j >= 0; j--) {
-      if (j === bottoms.length - 1) {
-        ctx.lineTo(bottoms[j].x, bottoms[j].y);
-      } else {
-        const cpx2 = (bottoms[j + 1].x + bottoms[j].x) / 2;
-        ctx.bezierCurveTo(cpx2, bottoms[j + 1].y, cpx2, bottoms[j].y, bottoms[j].x, bottoms[j].y);
-      }
-    }
-    ctx.closePath();
+    ctx.arc(xPos(idx), yPos(pct), 5, 0, Math.PI * 2);
+    ctx.fillStyle = idx === 0 ? '#FF6B9D' : '#6C5CE7';
     ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
   });
 
-  // Tooltip on click/touch
-  const tipEl = document.getElementById('acqStreamTip');
+  // Labels for start and end
+  ctx.font = 'bold 11px Secular One, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#FF6B9D';
+  ctx.fillText(startPct + '%', xPos(0) + 8, yPos(startPct) - 6);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#6C5CE7';
+  ctx.fillText(endPct + '%', xPos(n - 1) - 8, yPos(endPct) - 6);
+
+  // "שמות עצם" label on the left side
+  ctx.font = '10px Varela Round, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(108,92,231,0.4)';
+  ctx.fillText('מילה #', PAD.left + cW / 2, H - PAD.bottom + 28);
+
+  // Tooltip on click
+  const tipEl = document.getElementById('acqNounBiasTip');
   canvas.onclick = function (e) {
     if (!tipEl) return;
     const rect = canvas.getBoundingClientRect();
@@ -2794,17 +2798,12 @@ function drawAcqStream(ordered, AA) {
       const d = Math.abs(mx - xPos(i));
       if (d < minDist) { minDist = d; closest = i; }
     }
+    const pt = nounData[closest];
     const w = ordered[closest];
-    const s = stacks[closest];
-    let html = '<div class="acq-tip-card"><strong>מילה #' + w.index + ': ' + w.word + '</strong>';
+    let html = '<div class="acq-tip-card"><strong>מילה #' + pt.index + ': ' + pt.word + '</strong>';
     if (w.category) html += ' <span style="color:' + AA.CAT_COLORS[w.category] + '">(' + AA.CAT_LABELS[w.category] + ')</span>';
-    html += '<br>';
-    AA.CAT_ORDER.forEach(c => {
-      if (s[c] > 0) {
-        const pct = s._total > 0 ? Math.round((s[c] / s._total) * 100) : 0;
-        html += '<span class="acq-legend-dot" style="background:' + AA.CAT_COLORS[c] + '"></span> ' + AA.CAT_LABELS[c] + ': ' + s[c] + ' (' + pct + '%)<br>';
-      }
-    });
+    html += '<br>שמות עצם: <strong>' + pt.nounPct + '%</strong> מאוצר המילים';
+    html += '<br>שאר קטגוריות: <strong>' + (100 - pt.nounPct) + '%</strong>';
     html += '</div>';
     tipEl.innerHTML = html;
   };

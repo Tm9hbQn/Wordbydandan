@@ -148,10 +148,11 @@
     CAT_ORDER.forEach(function (c) {
       var list = cats[c] || [];
       if (!list.length) return;
-      var pct = total > 0 ? Math.round((list.length / total) * 100) : 0;
+      var pctRaw = total > 0 ? (list.length / total) * 100 : 0;
+      var pct = pctRaw >= 10 ? Math.round(pctRaw) + '%' : pctRaw.toFixed(1) + '%';
       var examples = list.slice(-3).map(function (w) { return w.word; }).join(', ');
       html += '<div class="vocab-tip-row"><span class="vocab-legend-dot" style="background:' + CAT_COLORS[c] + '"></span>' +
-        CAT_LABELS[c] + ': <strong>' + list.length + '</strong> (' + pct + '%) <span class="vocab-tip-ex">(' + examples + ')</span></div>';
+        CAT_LABELS[c] + ': <strong>' + list.length + '</strong> (' + pct + ') <span class="vocab-tip-ex">(' + examples + ')</span></div>';
     });
     html += '</div>';
     return html;
@@ -386,11 +387,14 @@
 
       // Percentage text inside bar if segment is tall enough (use ACTUAL percentage)
       if (segH > 20) {
+        var count = (cats[c] || []).length;
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 12px Secular One, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(Math.round(actualPcts[c]) + '%', barX + barW / 2, yOffset + segH / 2);
+        var pctVal = actualPcts[c];
+        var pctStr = pctVal >= 10 ? Math.round(pctVal) + '%' : pctVal.toFixed(1) + '%';
+        ctx.fillText(count + ' (' + pctStr + ')', barX + barW / 2, yOffset + segH / 2);
       }
 
       yOffset += segH;
@@ -436,7 +440,8 @@
 
       // Count and percentage below label (use ACTUAL data, not animated values)
       var countText = (cats[c] || []).length;
-      var pctText = Math.round(actualPcts[c]) + '%';
+      var pctVal = actualPcts[c];
+      var pctText = pctVal >= 10 ? Math.round(pctVal) + '%' : pctVal.toFixed(1) + '%';
       ctx.fillStyle = COLORS.purple;
       ctx.font = '11px Varela Round, sans-serif';
       ctx.fillText(countText + ' מילים · ' + pctText, textRight, labelY + 10);
@@ -576,8 +581,9 @@
       CAT_ORDER.forEach(function (c) {
         var cnt = d[c] || 0;
         if (!cnt) return;
-        var pct = d.total > 0 ? Math.round((cnt / d.total) * 100) : 0;
-        html += '<span class="vocab-legend-dot" style="background:' + CAT_COLORS[c] + ';display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;"></span> ' + CAT_LABELS[c] + ': ' + cnt + ' (' + pct + '%)<br>';
+        var pctRaw = d.total > 0 ? (cnt / d.total) * 100 : 0;
+        var pct = pctRaw >= 10 ? Math.round(pctRaw) + '%' : pctRaw.toFixed(1) + '%';
+        html += '<span class="vocab-legend-dot" style="background:' + CAT_COLORS[c] + ';display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;"></span> ' + CAT_LABELS[c] + ': ' + cnt + ' (' + pct + ')<br>';
       });
       infoEl.innerHTML = html;
       infoEl.classList.remove('hidden');
@@ -594,7 +600,7 @@
     if (!existing) {
       var title = document.createElement('h3');
       title.className = 'trends-chart-title vocab-card-title';
-      title.textContent = 'גידול בסך אוצר המילים על פני זמן';
+      title.textContent = 'סך המילים המצטבר לפי חודשים';
       title.style.marginBottom = '0.5rem';
       chartContainer.insertBefore(title, chartContainer.firstChild);
     }
@@ -630,13 +636,13 @@
     });
 
     // Card 1: Stacked bars (category evolution)
-    var c1 = createCard('אבולוציית הקטגוריות', 'vchart1');
+    var c1 = createCard('כמה מילים בכל קטגוריה לפי גיל', 'vchart1');
     container.appendChild(c1);
     setupSlider('vchart1', range, function (age) { drawStackedBars('vchart1', age); });
     buildLegend('vchart1', catLegend);
 
     // Card 2: Proportional bar (relative percentages)
-    var c2 = createCard('חלוקה יחסית של הקטגוריות', 'vchart2');
+    var c2 = createCard('מה החלק של כל קטגוריה מתוך כלל המילים', 'vchart2');
     container.appendChild(c2);
     setupSlider('vchart2', range, function (age) {
       propAnimState['vchart2'] = propAnimState['vchart2'] || {};
