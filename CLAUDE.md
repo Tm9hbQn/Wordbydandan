@@ -27,21 +27,22 @@
 
 ```
 /
-├── index.html              # Single-page app (~317 lines)
+├── index.html              # Single-page app (~340 lines)
 ├── docs.html               # Documentation viewer — renders CLAUDE.md, IMPROVEMENTS.md, changelog (~307 lines)
 ├── tests.html              # Pixel art character studio (369 lines, NOT linked from main)
 ├── vocabulary.json         # Static CDI-categorized vocabulary (85 words, ages 10-16 months)
 ├── CLAUDE.md               # THIS FILE — read before every task
 ├── IMPROVEMENTS.md         # 20/80 optimization roadmap
 ├── css/
-│   ├── styles.css          # All main styles (~2630 lines)
+│   ├── styles.css          # All main styles (~3050 lines)
 │   └── pixel-baby.css      # Pixel baby styles (NOT loaded in main site)
 ├── js/
-│   ├── app.js              # Main app logic (~2280 lines)
+│   ├── app.js              # Main app logic (~3550 lines)
+│   ├── acquisition-analysis.js  # Acquisition order analysis data engine, IIFE (~520 lines)
 │   ├── vocab-charts.js     # Vocabulary analysis charts, IIFE pattern (~720 lines)
 │   └── pixel-baby.js       # Pixel baby character (NOT loaded in main site)
 └── supabase/
-    └── schema.sql          # DB schema with RLS policies
+    └── schema.sql          # DB schema with RLS policies + category columns
 ```
 
 ## Loading Order & Dependencies
@@ -50,33 +51,35 @@ Understanding this prevents 90% of "it doesn't work" issues:
 
 ```
 1. Google Fonts (preconnect + stylesheet)
-2. css/styles.css?v=14          ← all visual styles
+2. css/styles.css?v=16          ← all visual styles
 3. HTML body renders
 4. Supabase JS SDK (CDN)        ← must load before app.js
 5. Lucide Icons (CDN)           ← must load before app.js calls lucide.createIcons()
-6. js/app.js?v=15               ← main logic, runs on DOMContentLoaded
-7. js/vocab-charts.js?v=11      ← chart IIFE, fetches vocabulary.json on load
+6. js/app.js?v=17               ← main logic, runs on DOMContentLoaded
+7. js/acquisition-analysis.js?v=2  ← acquisition order analysis data engine (IIFE)
+8. js/vocab-charts.js?v=11      ← chart IIFE, fetches vocabulary.json on load
 ```
 
-**Critical:** `app.js` depends on `window.supabase` (SDK) and `lucide` (icons) being available. `vocab-charts.js` is self-contained (IIFE) and fetches `vocabulary.json` independently with its own cache-bust (`?t=Date.now()`).
+**Critical:** `app.js` depends on `window.supabase` (SDK) and `lucide` (icons) being available. `acquisition-analysis.js` exposes a global `AcquisitionAnalysis` object used by `app.js`. `vocab-charts.js` is self-contained (IIFE) and fetches `vocabulary.json` independently with its own cache-bust (`?t=Date.now()`).
 
 ## Architecture Overview
 
 ### Data Flow
 
 ```
-User Input → submitWord() → duplicate check → age picker → notes → saveNewWord()
-                                                                        ↓
-                                                              insertWord() → Supabase
-                                                                        ↓ (fallback)
-                                                                   localStorage
-                                                                        ↓
-                                                              loadWords() → fetchWords()
-                                                                        ↓
-                                                              global `words` array
-                                                                        ↓
-                                                    renderWords() → Grid OR Timeline
-                                                    renderTrends() → SVG charts
+User Input → submitWord() → duplicate check → age picker → category picker → notes → saveNewWord()
+                                                                                          ↓
+                                                                                insertWord() → Supabase
+                                                                                          ↓ (fallback)
+                                                                                     localStorage
+                                                                                          ↓
+                                                                                loadWords() → fetchWords()
+                                                                                          ↓
+                                                                                global `words` array
+                                                                                          ↓
+                                                                      renderWords() → Grid OR Timeline
+                                                                      renderTrends() → SVG charts
+                                                                      renderAcquisitionCharts() → Canvas charts
 ```
 
 ### State Variables (app.js globals)
@@ -93,23 +96,28 @@ User Input → submitWord() → duplicate check → age picker → notes → sav
 | `viewBeforeSearch` | String\|null | View to restore after search clears |
 | `timelineDisplayCount` | Number | Timeline pagination (resets to 10 on re-render) |
 | `addFlowLinkedTo` | String\|null | Linked word ID during add flow |
+| `addFlowCategory` | String\|null | CDI category during add flow |
+| `addFlowSubCategory` | String\|null | CDI sub-category during add flow |
 | `editingLinkedTo` | String\|null | Linked word ID during edit |
 | `submitting` | Boolean | Prevents duplicate submissions |
 | `filterMonth` | Number\|null | Selected month filter (null = all) |
 | `filterCategory` | String\|null | Selected CDI category filter (null = all) |
 | `vocabLookup` | Object | Word text → vocabulary.json entry map |
+| `acqWindowSize` | Number | Rolling window size for pulse chart (default 10) |
 
 ### Database Schema
 
 ```sql
 words {
-  id:          UUID PRIMARY KEY
-  word:        TEXT NOT NULL
-  age_months:  INTEGER (nullable)
-  notes:       TEXT (nullable)
-  linked_to:   UUID (nullable, FK → words.id)  -- evolution chain parent
-  created_at:  TIMESTAMPTZ
-  updated_at:  TIMESTAMPTZ
+  id:            UUID PRIMARY KEY
+  word:          TEXT NOT NULL
+  age_months:    INTEGER (nullable)
+  notes:         TEXT (nullable)
+  linked_to:     UUID (nullable, FK → words.id)  -- evolution chain parent
+  cdi_category:  TEXT (nullable)  -- CDI main category (general_nominals, etc.)
+  sub_category:  TEXT (nullable)  -- CDI sub-category (animals, food_drink, etc.)
+  created_at:    TIMESTAMPTZ
+  updated_at:    TIMESTAMPTZ
 }
 ```
 
@@ -138,11 +146,19 @@ All DB operations follow this pattern:
 | 7b | Search | `#searchInput` | Auto-switches to grid, fuzzy matching |
 | 7c | Grid View | `#wordsGrid` | CSS grid, hidden by default |
 | 7d | Timeline | `#timelineWrapper`, `#timelineTrack` | Default view, paginated (10→+50→all) |
-| 8 | Trends | `#trendsSection` | SVG charts, stat card, vocab analysis cards |
+| 8 | Trends | `#trendsSection` | Tabbed: Growth + Acquisition Analysis |
+| 8.tabs | Trends Tabs | `#trendsTabs` | "צמיחה" (Growth) + "ניתוח רכישה" (Acquisition) |
 | 8a | Growth Chart | `#trendsChart`, `#trendsSvg` | Cumulative line+area, interactive cursor |
 | 8b | Delta Chart | `#deltaChart`, `#deltaSvg` | Bar chart, best month highlighted pink |
 | 8c | Stat Card | `#trendsStatCard` | Shimmer animation, Lucide trending-up icon |
 | 8d | Vocab Cards | `#vocabCards` | Populated by vocab-charts.js |
+| 8e | Acq Stream | `#acqStream`, `#acqStreamCanvas` | Stacked area by word order (Ch.1) |
+| 8f | Acq Pulse | `#acqPulse`, `#acqPulseCanvas` | Rolling window category bars (Ch.2) |
+| 8g | Acq Milestones | `#acqMilestones`, `#acqMilestonesCanvas` | Milestone proportional bars (Ch.3) |
+| 8h | Acq Insights | `#acqInsights`, `#acqInsightsList` | Auto-generated data insights (Ch.4A) |
+| 8i | Acq Emergence | `#acqEmergence`, `#acqEmergenceCanvas` | Category emergence timeline (Ch.4B) |
+| 8j | Acq Noun Bias | `#acqNounBias`, `#acqNounBiasCanvas` | Noun % curve over acquisition (Ch.5) |
+| 8k | Acq Radar | `#acqRadar`, `#acqRadarCanvas` | Sub-category radar/spider chart (Ch.6) |
 | 9 | Edit Modal | `#editModal` | View/Edit toggle, z-index 200 |
 | 10 | Evo Modal | `#evoModal` | Vertical chain with reorder, z-index 200 |
 | 11 | Delete Modal | `#deleteConfirmModal` | Custom styled, NEVER use native confirm() |
@@ -185,7 +201,7 @@ All DB operations follow this pattern:
 | 100 | Success toast |
 | 200 | All modals (edit, evo, delete) |
 
-### Key Animations (25 total in CSS)
+### Key Animations (27+ total in CSS)
 
 Most important to understand:
 - `floatUp` — background emoji floating
@@ -193,7 +209,11 @@ Most important to understand:
 - `modalSlideUp` — modal entrance (0.4s cubic-bezier)
 - `statShimmer` — stat card highlight shimmer (1.5s loop)
 - `dotPulseTimeline` — timeline dot pulse
+- `tabFadeIn` — trends tab content transition
+- `tipFadeIn` — tooltip/tip card entrance
 - Scroll-reveal system: `.reveal-on-scroll` + `.revealed` class + `--reveal-delay` CSS var
+- Acquisition cards: slide-up entrance (0.6s cubic-bezier)
+- Insight cards: slide-in from right with stagger delay
 
 ### Word Card Color System
 
@@ -243,11 +263,40 @@ Words link via `linked_to` field forming directed graphs:
 
 **Sub-categories** in vocabulary.json: people, sound_effects, animals, food_drink (22 words = 26%), body_parts, household, toys_and_routines, clothing, actions, routines_and_games, attributes, assertions, outside, unclear.
 
-### Charts
+### Charts (vocab-charts.js — time-based)
 
 1. **Stacked Bars** (`vchart1`): Category counts per month, with slider and persistent breakdown below
 2. **Proportional Bar** (`vchart2`): Relative % composition, animated transitions (easing 0.15/frame), wave view toggle
 3. All charts use canvas with `devicePixelRatio` scaling for retina displays
+
+## Acquisition Analysis (acquisition-analysis.js)
+
+Analyzes words by **acquisition order** (word #1, #2, ...) not by time. Data engine is an IIFE exposing a global `AcquisitionAnalysis` object with 19 public methods. Charts rendered in `app.js` (`drawAcq*` functions).
+
+### Charts (acquisition order-based)
+
+1. **Acquisition Stream** (`acqStreamCanvas`): Stacked area chart, X=word number, Y=cumulative categories
+2. **Rolling Category Mix** (`acqPulseCanvas`): Horizontal stacked bars per window of N words (user selects 5/10/15/20/25)
+3. **Milestone Comparison** (`acqMilestonesCanvas`): Proportional bars at dynamic milestones showing category % at each point
+4. **Smart Insights** (`acqInsightsList`): Auto-generated text insights from 6 rules (burst, late emergence, dominance, balance, noun shift, sub-category)
+5. **Category Emergence** (`acqEmergenceCanvas`): Gantt-style timeline showing when each category first appeared
+6. **Noun Bias Curve** (`acqNounBiasCanvas`): Line chart tracking noun % over acquisition order
+7. **Sub-category Radar** (`acqRadarCanvas`): Spider/radar chart with toggleable milestone layers
+
+### Dynamic Titles
+
+Each chart has a title generated from the data (`getStreamTitle()`, `getPulseTitle()`, etc.) that adapts as words are added.
+
+### Category Picker UI
+
+Both add-flow and edit-modal include a pill-based category picker (`buildCategoryPicker()`) with:
+- 5 CDI main category pills (colored by `--cat-color` CSS variable)
+- Dynamic sub-category pills based on selected main category
+- Auto-detection from `vocabLookup` in add flow
+
+### Category Migration
+
+On init, `migrateVocabCategories()` auto-migrates categories from `vocabulary.json` to DB for words that don't have `cdi_category` set yet.
 
 ### When Adding Words to DB
 
@@ -287,10 +336,10 @@ Words link via `linked_to` field forming directed graphs:
 ### 1. Cache Busters
 
 ```bash
-grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
+grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html && grep 'acquisition-analysis.js?v=' index.html
 ```
 
-Increment `?v=N` for every file you changed. Current versions: styles.css?v=14, app.js?v=15, vocab-charts.js?v=11.
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=16, app.js?v=17, vocab-charts.js?v=11, acquisition-analysis.js?v=2.
 
 ### 2. RTL Arrows
 
@@ -320,7 +369,7 @@ Must return empty.
 ### 5. JS Syntax Valid
 
 ```bash
-node -c js/app.js && node -c js/vocab-charts.js && echo "OK"
+node -c js/app.js && node -c js/acquisition-analysis.js && node -c js/vocab-charts.js && echo "OK"
 ```
 
 ### 6. Vocabulary JSON Valid
@@ -340,8 +389,8 @@ No untracked files that should be committed.
 ### 8. Key Content
 
 ```bash
-grep 'מגמות' index.html    # Should be just "מגמות" not "מגמות צמיחה"
-grep 'words-title' index.html  # Emoji 💬 on the RIGHT/start in RTL
+grep 'תובנות ומגמות' index.html  # Updated title (was "מגמות")
+grep 'words-title' index.html     # Emoji 💬 on the RIGHT/start in RTL
 ```
 
 ---
