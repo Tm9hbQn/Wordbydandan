@@ -238,6 +238,7 @@ let viewBeforeSearch = null; // remembers view before search auto-switched to gr
 let addFlowLinkedTo = null; // linked_to for the add-word flow
 let addFlowCategory = null; // cdi_category for add flow
 let addFlowSubCategory = null; // sub_category for add flow
+let addFlowEvoSource = null; // word object to exclude from duplicate check when adding evolution
 let filterMonth = null; // selected age_months filter (null = all)
 let filterCategory = null; // selected CDI category filter (null = all)
 let vocabLookup = {}; // word text → vocabulary.json entry (for category lookup)
@@ -410,6 +411,7 @@ function setupEventListeners() {
   editCancelBtn.addEventListener('click', switchToViewMode);
   editDeleteBtn.addEventListener('click', handleDelete);
   editSaveBtn.addEventListener('click', handleEditSave);
+  document.getElementById('addEvoBtn').addEventListener('click', handleAddEvolution);
 
   editWordInput.addEventListener('paste', (e) => {
     e.preventDefault();
@@ -536,6 +538,27 @@ function setupEventListeners() {
     renderWords();
   });
 
+  // Filter toggles
+  const monthFilterToggle = document.getElementById('monthFilterToggle');
+  const categoryFilterToggle = document.getElementById('categoryFilterToggle');
+  const monthFilterGroup = document.getElementById('monthFilterGroup');
+  const categoryFilterGroup = document.getElementById('categoryFilterGroup');
+
+  if (monthFilterToggle) {
+    monthFilterToggle.addEventListener('click', () => {
+      const isOpen = !monthFilterGroup.classList.contains('collapsed');
+      monthFilterGroup.classList.toggle('collapsed', isOpen);
+      monthFilterToggle.classList.toggle('active', !isOpen);
+    });
+  }
+  if (categoryFilterToggle) {
+    categoryFilterToggle.addEventListener('click', () => {
+      const isOpen = !categoryFilterGroup.classList.contains('collapsed');
+      categoryFilterGroup.classList.toggle('collapsed', isOpen);
+      categoryFilterToggle.classList.toggle('active', !isOpen);
+    });
+  }
+
   // Timeline scroll - listen on the scroll container
   const timelineScroll = $('#timelineScroll');
   if (timelineScroll) {
@@ -587,9 +610,11 @@ function onWordBlur() {
 }
 
 /* ===== Duplicate Detection ===== */
-function findSimilarWords(text) {
+function findSimilarWords(text, excludeIds) {
   const q = text.toLowerCase();
+  const exclude = excludeIds ? new Set(excludeIds) : new Set();
   return words.filter((w) => {
+    if (exclude.has(w.id)) return false;
     const wl = w.word.toLowerCase();
     if (wl === q) return true;
     if (wl.includes(q) || q.includes(wl)) return true;
@@ -622,7 +647,7 @@ function showDuplicateModal(text, similar) {
       item.addEventListener('click', () => {
         document.body.removeChild(overlay);
         document.body.style.overflow = '';
-        resolve('existing');
+        resolve({ action: 'view', word: w });
       });
       list.appendChild(item);
     });
@@ -651,12 +676,20 @@ async function submitWord() {
   if (!text) return;
   submitting = true;
 
-  // Check for duplicates
-  const similar = findSimilarWords(text);
+  // Check for duplicates (exclude evo source word if adding evolution)
+  const excludeIds = addFlowEvoSource ? [addFlowEvoSource.id] : [];
+  const similar = findSimilarWords(text, excludeIds);
   if (similar.length > 0) {
     const result = await showDuplicateModal(text, similar);
-    if (result === 'cancel' || result === 'existing') {
+    if (result === 'cancel') {
+      addFlowEvoSource = null;
       submitting = false;
+      return;
+    }
+    if (result && result.action === 'view') {
+      addFlowEvoSource = null;
+      submitting = false;
+      openEditModal(result.word);
       return;
     }
   }
@@ -705,6 +738,20 @@ function selectAge(months) {
     addFlowCategory = null;
     addFlowSubCategory = null;
     setupAddFlowLinking();
+    // Auto-link if adding evolution from a word card
+    if (addFlowEvoSource) {
+      addFlowLinkedTo = addFlowEvoSource.id;
+      const checkbox = document.getElementById('addFlowLinkCheckbox');
+      const linkSearch = document.getElementById('addFlowLinkSearch');
+      const linkCurrentWrap = document.getElementById('addFlowLinkCurrent');
+      const linkBadgeEl = document.getElementById('addFlowLinkBadge');
+      const linkInputWrap = document.getElementById('addFlowSearchWrap');
+      if (checkbox) checkbox.checked = true;
+      if (linkSearch) linkSearch.classList.remove('hidden');
+      if (linkBadgeEl) linkBadgeEl.textContent = addFlowEvoSource.word;
+      if (linkCurrentWrap) linkCurrentWrap.classList.remove('hidden');
+      if (linkInputWrap) linkInputWrap.classList.add('hidden');
+    }
     // Init category picker in add flow
     const addCatContainer = document.getElementById('addFlowCatPickerContainer');
     if (addCatContainer) {
@@ -861,6 +908,7 @@ async function saveNewWord(notes) {
       addFlowLinkedTo = null;
       addFlowCategory = null;
       addFlowSubCategory = null;
+      addFlowEvoSource = null;
       resetInput();
     }
   }, 300);
@@ -1187,6 +1235,12 @@ function buildFilterPills() {
     });
     categoryFilterPills.appendChild(pill);
   });
+
+  // Update toggle button states to reflect active filters
+  const monthToggle = document.getElementById('monthFilterToggle');
+  const catToggle = document.getElementById('categoryFilterToggle');
+  if (monthToggle) monthToggle.classList.toggle('has-active-filter', filterMonth !== null);
+  if (catToggle) catToggle.classList.toggle('has-active-filter', filterCategory !== null);
 }
 
 /* ===== Load & Render Words ===== */
@@ -1366,6 +1420,7 @@ const wordViewMode = $('#wordViewMode');
 const wordEditMode = $('#wordEditMode');
 const viewWordDisplay = $('#viewWordDisplay');
 const viewAgeDisplay = $('#viewAgeDisplay');
+const viewCategoryDisplay = $('#viewCategoryDisplay');
 const viewNotesDisplay = $('#viewNotesDisplay');
 const viewEvoSection = $('#viewEvoSection');
 const viewEvoChain = $('#viewEvoChain');
@@ -1381,6 +1436,32 @@ function openEditModal(word) {
   // Populate view mode
   viewWordDisplay.textContent = word.word;
   viewAgeDisplay.textContent = word.age_months !== null ? ageMonthsToHebrew(word.age_months) : '';
+
+  // Show category if exists
+  const wordCat = getWordCategoryFromObj(word);
+  if (wordCat && CDI_CAT_LABELS[wordCat]) {
+    viewCategoryDisplay.innerHTML = '';
+    const catBadge = document.createElement('span');
+    catBadge.className = 'view-cat-badge';
+    catBadge.style.setProperty('--cat-color', CDI_CAT_COLORS[wordCat]);
+    catBadge.textContent = CDI_CAT_LABELS[wordCat];
+    viewCategoryDisplay.appendChild(catBadge);
+    // Show sub-category too if available
+    const subCat = word.sub_category || (vocabLookup[word.word] && vocabLookup[word.word].sub_category);
+    if (subCat && subCat !== 'unclear') {
+      const allSubs = CDI_SUB_CATEGORIES[wordCat] || [];
+      const subInfo = allSubs.find(s => s.key === subCat);
+      if (subInfo) {
+        const subBadge = document.createElement('span');
+        subBadge.className = 'view-subcat-badge';
+        subBadge.textContent = subInfo.label;
+        viewCategoryDisplay.appendChild(subBadge);
+      }
+    }
+    viewCategoryDisplay.classList.remove('hidden');
+  } else {
+    viewCategoryDisplay.classList.add('hidden');
+  }
 
   if (word.notes) {
     viewNotesDisplay.textContent = word.notes;
@@ -1494,6 +1575,19 @@ function updateLinkUI() {
   } else {
     linkCurrent.classList.add('hidden');
   }
+}
+
+function handleAddEvolution() {
+  if (!viewingWord) return;
+  const sourceWord = viewingWord;
+  addFlowEvoSource = sourceWord;
+  closeEditModal();
+  // Focus the input and scroll to it
+  wordInput.value = '';
+  wordInput.focus();
+  setTimeout(() => {
+    inputSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 200);
 }
 
 function closeEditModal() {

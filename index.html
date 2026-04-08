@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Varela+Round&family=Karantina:wght@300;400;700&family=Suez+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=15">
+  <link rel="stylesheet" href="css/styles.css?v=16">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
 </head>
 <body>
@@ -166,12 +166,22 @@
     </div>
     <!-- Filters Bar -->
     <div class="filters-bar" id="filtersBar">
-      <div class="filter-group" id="monthFilterGroup">
-        <span class="filter-label">חודש:</span>
+      <div class="filters-toggles">
+        <button class="filter-toggle-btn" id="monthFilterToggle">
+          <span class="filter-toggle-icon">🕐</span>
+          <span>חודש</span>
+          <span class="filter-toggle-arrow">▼</span>
+        </button>
+        <button class="filter-toggle-btn" id="categoryFilterToggle">
+          <span class="filter-toggle-icon">🏷️</span>
+          <span>קטגוריה</span>
+          <span class="filter-toggle-arrow">▼</span>
+        </button>
+      </div>
+      <div class="filter-group collapsed" id="monthFilterGroup">
         <div class="filter-pills" id="monthFilterPills"></div>
       </div>
-      <div class="filter-group" id="categoryFilterGroup">
-        <span class="filter-label">קטגוריה:</span>
+      <div class="filter-group collapsed" id="categoryFilterGroup">
         <div class="filter-pills" id="categoryFilterPills"></div>
       </div>
     </div>
@@ -291,6 +301,7 @@
       <div id="wordViewMode">
         <div class="view-word-display" id="viewWordDisplay"></div>
         <div class="view-age-display" id="viewAgeDisplay"></div>
+        <div class="view-category-display hidden" id="viewCategoryDisplay"></div>
         <div class="view-notes-display hidden" id="viewNotesDisplay"></div>
         <div class="view-evo-section hidden" id="viewEvoSection">
           <div class="view-evo-label">התפתחות מילה 🔗</div>
@@ -298,6 +309,7 @@
         </div>
         <div class="modal-actions">
           <button class="modal-delete-btn" id="editDeleteBtn">מחקו 🗑️</button>
+          <button class="modal-add-evo-btn" id="addEvoBtn">הוסיפו התפתחות 🌱</button>
           <button class="modal-edit-btn" id="editToggleBtn">ערכו ✏️</button>
         </div>
       </div>
@@ -386,7 +398,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
-  <script src="js/app.js?v=16"></script>
+  <script src="js/app.js?v=17"></script>
   <script src="js/acquisition-analysis.js?v=1"></script>
   <script src="js/vocab-charts.js?v=11"></script>
 </body>

@@ -50,11 +50,11 @@ Understanding this prevents 90% of "it doesn't work" issues:
 
 ```
 1. Google Fonts (preconnect + stylesheet)
-2. css/styles.css?v=14          ← all visual styles
+2. css/styles.css?v=16          ← all visual styles
 3. HTML body renders
 4. Supabase JS SDK (CDN)        ← must load before app.js
 5. Lucide Icons (CDN)           ← must load before app.js calls lucide.createIcons()
-6. js/app.js?v=15               ← main logic, runs on DOMContentLoaded
+6. js/app.js?v=17               ← main logic, runs on DOMContentLoaded
 7. js/vocab-charts.js?v=11      ← chart IIFE, fetches vocabulary.json on load
 ```
 
@@ -290,7 +290,7 @@ Words link via `linked_to` field forming directed graphs:
 grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
 ```
 
-Increment `?v=N` for every file you changed. Current versions: styles.css?v=14, app.js?v=15, vocab-charts.js?v=11.
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=16, app.js?v=17, vocab-charts.js?v=11.
 
 ### 2. RTL Arrows
 
