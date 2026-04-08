@@ -266,7 +266,8 @@ Tab switching uses `requestAnimationFrame` before rendering to ensure correct ca
 2. **New Words Per Month** (SVG, `deltaSvg`): Bar chart, best month highlighted pink
 3. **Stat Card** (`trendsStatCard`): "בחודש X דניאלה למדה לא פחות מ-Y מילים חדשות"
 4. **Stacked Bars** (`vchart1`): "כמה מילים בכל קטגוריה לפי גיל" — with slider and breakdown
-5. **Proportional Bar** (`vchart2`): "מה החלק של כל קטגוריה מתוך כלל המילים" — animated, wave toggle
+5. **Category Percentage Trends** (`vchart3`): Dashed lines showing each category's % over months. Click line to highlight, click elsewhere to reset. Shows count + total on interaction.
+6. **Proportional Bar** (`vchart2`): "מה החלק של כל קטגוריה מתוך כלל המילים" — animated, wave toggle
 
 ### Charts — "לפי סדר רכישה" Tab
 
@@ -381,7 +382,7 @@ All charts/stats read from the global `words` array (fetched from Supabase). No 
 grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
 ```
 
-Increment `?v=N` for every file you changed. Current versions: styles.css?v=19, app.js?v=21, acquisition-analysis.js?v=3, vocab-charts.js?v=13.
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=19, app.js?v=21, acquisition-analysis.js?v=3, vocab-charts.js?v=14.
 
 ### 2. RTL Arrows
 

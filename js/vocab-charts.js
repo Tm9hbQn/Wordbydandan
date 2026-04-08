@@ -591,6 +591,205 @@
   }
 
   // ==========================================
+  // CHART 3: CATEGORY PERCENTAGE TRENDS (dashed lines)
+  // ==========================================
+  var catTrendsHighlight = null; // currently highlighted category key or null
+
+  function drawCategoryTrends(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var dpr = window.devicePixelRatio || 1;
+    var W = canvas.parentElement.offsetWidth;
+    var H = 300;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    var PAD = { top: 16, right: 16, bottom: 36, left: 42 };
+    var cW = W - PAD.left - PAD.right;
+    var cH = H - PAD.top - PAD.bottom;
+    var range = getAgeRange();
+
+    var months = [];
+    for (var m = range.min; m <= range.max; m++) months.push(m);
+    if (!months.length) return;
+
+    // Build cumulative percentage data per month
+    var monthData = months.map(function (m) {
+      var ws = getWordsUpTo(m);
+      var cats = getCategories(ws);
+      var total = ws.filter(function (w) { return w.cdi_category !== 'unclear'; }).length;
+      var row = { month: m, total: total };
+      CAT_ORDER.forEach(function (c) {
+        var cnt = (cats[c] || []).length;
+        row[c] = total > 0 ? (cnt / total) * 100 : 0;
+        row[c + '_count'] = cnt;
+      });
+      return row;
+    });
+
+    function xPos(i) { return PAD.left + (i / Math.max(months.length - 1, 1)) * cW; }
+    function yPos(pct) { return PAD.top + cH - (pct / 100) * cH; }
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(108,92,231,0.08)';
+    ctx.lineWidth = 1;
+    for (var p = 0; p <= 100; p += 20) {
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, yPos(p));
+      ctx.lineTo(W - PAD.right, yPos(p));
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(108,92,231,0.5)';
+      ctx.font = '10px Varela Round, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(p + '%', PAD.left - 6, yPos(p) + 4);
+    }
+
+    var hl = catTrendsHighlight;
+
+    // Draw lines for each category
+    CAT_ORDER.forEach(function (c) {
+      var isHL = hl === c;
+      var isDim = hl && hl !== c;
+
+      ctx.strokeStyle = CAT_COLORS[c];
+      ctx.globalAlpha = isDim ? 0.12 : 0.9;
+      ctx.lineWidth = isHL ? 3.5 : 2;
+      ctx.setLineDash(isHL ? [] : [6, 4]);
+
+      ctx.beginPath();
+      monthData.forEach(function (d, i) {
+        var x = xPos(i);
+        var y = yPos(d[c]);
+        if (i === 0) { ctx.moveTo(x, y); }
+        else {
+          var cpx = (xPos(i - 1) + x) / 2;
+          ctx.bezierCurveTo(cpx, yPos(monthData[i - 1][c]), cpx, y, x, y);
+        }
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Dots
+      monthData.forEach(function (d, i) {
+        ctx.beginPath();
+        ctx.arc(xPos(i), yPos(d[c]), isHL ? 5 : 3, 0, Math.PI * 2);
+        ctx.fillStyle = CAT_COLORS[c];
+        ctx.globalAlpha = isDim ? 0.12 : 1;
+        ctx.fill();
+        if (isHL) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+        }
+      });
+      ctx.globalAlpha = 1;
+
+      // Label at end of highlighted line
+      if (isHL && monthData.length > 0) {
+        var lastD = monthData[monthData.length - 1];
+        var lx = xPos(monthData.length - 1);
+        var ly = yPos(lastD[c]);
+        var pctVal = lastD[c];
+        var pctStr = pctVal >= 10 ? Math.round(pctVal) + '%' : pctVal.toFixed(1) + '%';
+        ctx.fillStyle = CAT_COLORS[c];
+        ctx.font = 'bold 12px Secular One, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pctStr, lx + 8, ly);
+      }
+    });
+
+    // Month labels
+    monthData.forEach(function (d, i) {
+      ctx.fillStyle = 'rgba(108,92,231,0.6)';
+      ctx.font = '10px Varela Round, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(d.month + 'ח\'', xPos(i), H - PAD.bottom + 16);
+    });
+
+    // Store geometry for click handler
+    canvas._ctData = monthData;
+    canvas._ctXPos = xPos;
+    canvas._ctYPos = yPos;
+  }
+
+  function setupCategoryTrendsClick(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    canvas.addEventListener('click', function (e) {
+      var rect = canvas.getBoundingClientRect();
+      var dpr = window.devicePixelRatio || 1;
+      var mx = e.clientX - rect.left;
+      var my = e.clientY - rect.top;
+      var monthData = canvas._ctData;
+      var xPos = canvas._ctXPos;
+      var yPos = canvas._ctYPos;
+      if (!monthData) return;
+
+      // Find closest category line to click point
+      var bestCat = null;
+      var bestDist = 30; // max pixel distance to detect click on line
+
+      CAT_ORDER.forEach(function (c) {
+        monthData.forEach(function (d, i) {
+          var dx = mx - xPos(i);
+          var dy = my - yPos(d[c]);
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestCat = c;
+          }
+        });
+      });
+
+      var tipEl = document.getElementById(canvasId + 'Tip');
+      if (bestCat) {
+        catTrendsHighlight = bestCat;
+        drawCategoryTrends(canvasId);
+        // Build tooltip showing this category across months
+        if (tipEl) {
+          var html = '<div class="vocab-tip-card">';
+          html += '<div class="vocab-tip-title"><span class="vocab-legend-dot" style="background:' + CAT_COLORS[bestCat] + '"></span> ' + CAT_LABELS[bestCat] + '</div>';
+          monthData.forEach(function (d) {
+            var cnt = d[bestCat + '_count'];
+            var pctRaw = d[bestCat];
+            var pct = pctRaw >= 10 ? Math.round(pctRaw) + '%' : pctRaw.toFixed(1) + '%';
+            html += '<div class="vocab-tip-row">' + ageToHebrew(d.month) + ': <strong>' + cnt + '</strong> מתוך ' + d.total + ' (' + pct + ')</div>';
+          });
+          html += '</div>';
+          tipEl.innerHTML = html;
+        }
+      } else {
+        catTrendsHighlight = null;
+        drawCategoryTrends(canvasId);
+        if (tipEl) {
+          // Default tooltip: latest month summary
+          var last = monthData[monthData.length - 1];
+          var html = '<div class="vocab-tip-card">';
+          html += '<div class="vocab-tip-title">' + last.total + ' מילים מסווגות · לחצו על קו להדגשה</div>';
+          CAT_ORDER.forEach(function (c) {
+            var cnt = last[c + '_count'];
+            if (!cnt) return;
+            var pctRaw = last[c];
+            var pct = pctRaw >= 10 ? Math.round(pctRaw) + '%' : pctRaw.toFixed(1) + '%';
+            html += '<div class="vocab-tip-row"><span class="vocab-legend-dot" style="background:' + CAT_COLORS[c] + '"></span>' + CAT_LABELS[c] + ': <strong>' + cnt + '</strong> (' + pct + ')</div>';
+          });
+          html += '</div>';
+          tipEl.innerHTML = html;
+        }
+      }
+    });
+  }
+
+  // ==========================================
   // MAIN TRENDS CHART ENHANCEMENT
   // ==========================================
   function enhanceMainTrendsChart() {
@@ -647,7 +846,33 @@
     setupSlider('vchart1', range, function (age) { drawStackedBars('vchart1', age); });
     buildLegend('vchart1', catLegend);
 
-    // Card 2: Proportional bar (relative percentages)
+    // Card 2: Category percentage trends (dashed lines)
+    var c2t = createCard('שינוי בקטגוריות על פני חודשים', 'vchart3', false);
+    container.appendChild(c2t);
+    catTrendsHighlight = null;
+    drawCategoryTrends('vchart3');
+    setupCategoryTrendsClick('vchart3');
+    buildLegend('vchart3', catLegend);
+    // Show default tooltip
+    var tipEl3 = document.getElementById('vchart3Tip');
+    if (tipEl3 && vocabData.length) {
+      var lastMonth = getAgeRange().max;
+      var ws = getWordsUpTo(lastMonth);
+      var cats = getCategories(ws);
+      var total = ws.filter(function (w) { return w.cdi_category !== 'unclear'; }).length;
+      var html = '<div class="vocab-tip-card"><div class="vocab-tip-title">' + total + ' מילים מסווגות · לחצו על קו להדגשה</div>';
+      CAT_ORDER.forEach(function (c) {
+        var cnt = (cats[c] || []).length;
+        if (!cnt) return;
+        var pctRaw = total > 0 ? (cnt / total) * 100 : 0;
+        var pct = pctRaw >= 10 ? Math.round(pctRaw) + '%' : pctRaw.toFixed(1) + '%';
+        html += '<div class="vocab-tip-row"><span class="vocab-legend-dot" style="background:' + CAT_COLORS[c] + '"></span>' + CAT_LABELS[c] + ': <strong>' + cnt + '</strong> (' + pct + ')</div>';
+      });
+      html += '</div>';
+      tipEl3.innerHTML = html;
+    }
+
+    // Card 3: Proportional bar (relative percentages)
     var c2 = createCard('מה החלק של כל קטגוריה מתוך כלל המילים', 'vchart2');
     container.appendChild(c2);
     setupSlider('vchart2', range, function (age) {
