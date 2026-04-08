@@ -2148,6 +2148,32 @@ body {
   margin-left: 0.2rem;
 }
 
+/* Acquisition stat card inherits from .trends-stat-card */
+.acq-stat-card {
+  margin-top: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.acq-stat-card.revealed .stat-highlight {
+  animation: statShimmer 4s ease-in-out infinite;
+  background: linear-gradient(
+    120deg,
+    var(--soft-purple) 0%,
+    var(--soft-purple) 40%,
+    #a78bfa 50%,
+    var(--soft-purple) 60%,
+    var(--soft-purple) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.acq-stat-card.revealed .stat-highlight:nth-of-type(1) { animation-delay: 0.3s; }
+.acq-stat-card.revealed .stat-highlight:nth-of-type(2) { animation-delay: 1.5s; }
+.acq-stat-card.revealed .stat-highlight:nth-of-type(3) { animation-delay: 2.5s; }
+
 /* ===== Footer ===== */
 .main-footer {
   text-align: center;

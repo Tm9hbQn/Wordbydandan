@@ -2553,9 +2553,8 @@ function renderTrends() {
 
     statText.innerHTML =
       `<i data-lucide="trending-up" class="stat-icon"></i> ` +
-      `החודש בו ${BABY_NAME} למדה הכי הרבה מילים חדשות הוא ` +
-      `<span class="stat-highlight">${monthName} ${yearShort}'</span>` +
-      `, בו היא הגתה לראשונה לא פחות מ-` +
+      `בחודש <span class="stat-highlight">${monthName} ${yearShort}'</span> ` +
+      `${BABY_NAME} למדה לא פחות מ-` +
       `<span class="stat-highlight">${bestMonth.newWords} מילים חדשות</span>`;
     if (window.lucide) lucide.createIcons();
 
@@ -2656,6 +2655,9 @@ function renderAcquisitionCharts() {
   // ---- CHAPTER 3: Milestone Comparison ----
   drawAcqMilestones(ordered, AA);
   buildAcqLegend('acqMilestonesLeg');
+
+  // ---- STAT CARD ----
+  renderAcqStatCard(ordered, AA);
 
   // ---- CHAPTER 4: Insights ----
   renderInsights(ordered, AA);
@@ -3041,6 +3043,72 @@ function drawAcqMilestones(ordered, AA) {
     html += '</div>';
     tipEl.innerHTML = html;
   };
+}
+
+/* ===== Acquisition Stat Card ===== */
+function renderAcqStatCard(ordered, AA) {
+  const statCard = document.getElementById('acqStatCard');
+  const statText = document.getElementById('acqStatText');
+  if (!statCard || !statText || ordered.length < 5) {
+    if (statCard) statCard.style.display = 'none';
+    return;
+  }
+
+  const babyName = BABY_NAME;
+
+  // Find the most diverse window of 10 words
+  const windows = AA.getAllWindows(ordered, 10);
+  let mostDiverse = windows[0];
+  windows.forEach(w => {
+    if (w.uniqueCategories > mostDiverse.uniqueCategories) mostDiverse = w;
+  });
+
+  // Get noun bias data
+  const nounData = AA.getNounBiasData(ordered);
+  const currentNounPct = nounData.length > 0 ? nounData[nounData.length - 1].nounPct : 0;
+
+  // Get category emergence
+  const emergence = AA.getCategoryEmergence(ordered);
+  const activeCatCount = AA.CAT_ORDER.filter(c => emergence[c].count > 0).length;
+
+  // Build stat text — pick the most interesting stat
+  let html = '<i data-lucide="sparkles" class="stat-icon"></i> ';
+
+  if (mostDiverse.uniqueCategories >= 4) {
+    html += `במילים <span class="stat-highlight">${mostDiverse.label}</span> ` +
+      `${babyName} הפגינה את הגיוון הגדול ביותר — ` +
+      `<span class="stat-highlight">${mostDiverse.uniqueCategories} קטגוריות שונות</span> ` +
+      `בקבוצה אחת`;
+  } else if (nounData.length >= 15) {
+    const earlyPct = nounData[Math.min(14, nounData.length - 1)].nounPct;
+    if (earlyPct - currentNounPct > 10) {
+      html += `שמות עצם ירדו מ-<span class="stat-highlight">${earlyPct}%</span> ` +
+        `ב-15 המילים הראשונות ל-<span class="stat-highlight">${currentNounPct}%</span> היום — ` +
+        `סימן לגיוון בריא`;
+    } else {
+      html += `${babyName} רכשה מילים מ-<span class="stat-highlight">${activeCatCount} קטגוריות שונות</span> ` +
+        `ושמות עצם מהווים <span class="stat-highlight">${currentNounPct}%</span> מאוצר המילים`;
+    }
+  } else {
+    html += `${babyName} כבר רכשה <span class="stat-highlight">${ordered.length} מילים</span> ` +
+      `מ-<span class="stat-highlight">${activeCatCount} קטגוריות</span>`;
+  }
+
+  statText.innerHTML = html;
+  statCard.style.display = '';
+  if (window.lucide) lucide.createIcons();
+
+  // Observe for reveal animation
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        statCard.classList.add('revealed');
+        observer.unobserve(statCard);
+      }
+    });
+  }, { threshold: 0.3 });
+  statCard.classList.remove('revealed');
+  observer.observe(statCard);
 }
 
 /* ===== Chapter 4: Insights ===== */

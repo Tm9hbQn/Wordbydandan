@@ -27,18 +27,19 @@
 
 ```
 /
-├── index.html              # Single-page app (~317 lines)
+├── index.html              # Single-page app (~409 lines)
 ├── docs.html               # Documentation viewer — renders CLAUDE.md, IMPROVEMENTS.md, changelog (~307 lines)
 ├── tests.html              # Pixel art character studio (369 lines, NOT linked from main)
 ├── vocabulary.json         # Static CDI-categorized vocabulary (85 words, ages 10-16 months)
 ├── CLAUDE.md               # THIS FILE — read before every task
 ├── IMPROVEMENTS.md         # 20/80 optimization roadmap
 ├── css/
-│   ├── styles.css          # All main styles (~2630 lines)
+│   ├── styles.css          # All main styles (~3087 lines)
 │   └── pixel-baby.css      # Pixel baby styles (NOT loaded in main site)
 ├── js/
-│   ├── app.js              # Main app logic (~2280 lines)
-│   ├── vocab-charts.js     # Vocabulary analysis charts, IIFE pattern (~720 lines)
+│   ├── app.js              # Main app logic (~3224 lines)
+│   ├── acquisition-analysis.js # Acquisition analysis engine, module pattern (~444 lines)
+│   ├── vocab-charts.js     # Vocabulary analysis charts, IIFE pattern (~726 lines)
 │   └── pixel-baby.js       # Pixel baby character (NOT loaded in main site)
 └── supabase/
     └── schema.sql          # DB schema with RLS policies
@@ -50,11 +51,12 @@ Understanding this prevents 90% of "it doesn't work" issues:
 
 ```
 1. Google Fonts (preconnect + stylesheet)
-2. css/styles.css?v=16          ← all visual styles
+2. css/styles.css?v=17          ← all visual styles
 3. HTML body renders
 4. Supabase JS SDK (CDN)        ← must load before app.js
 5. Lucide Icons (CDN)           ← must load before app.js calls lucide.createIcons()
-6. js/app.js?v=18               ← main logic, runs on DOMContentLoaded
+6. js/app.js?v=19               ← main logic, runs on DOMContentLoaded
+6b. js/acquisition-analysis.js?v=1 ← acquisition analysis engine (module)
 7. js/vocab-charts.js?v=12      ← chart IIFE, fetches vocabulary.json on load
 ```
 
@@ -97,6 +99,7 @@ User Input → submitWord() → duplicate check → age picker → notes → sav
 | `submitting` | Boolean | Prevents duplicate submissions |
 | `filterMonth` | Number\|null | Selected month filter (null = all) |
 | `filterCategory` | String\|null | Selected CDI category filter (null = all) |
+| `addFlowEvoSource` | Object\|null | Source word when adding evolution from view card |
 | `vocabLookup` | Object | Word text → vocabulary.json entry map |
 
 ### Database Schema
@@ -136,14 +139,20 @@ All DB operations follow this pattern:
 | 7 | Words Section | `#wordsSection` | Contains nav, search, grid, timeline |
 | 7a | Section Nav | `#sectionNav` | Sticky, backdrop-blur, tabs + view toggle |
 | 7b | Search | `#searchInput` | Auto-switches to grid, fuzzy matching |
-| 7c | Grid View | `#wordsGrid` | CSS grid, hidden by default |
-| 7d | Timeline | `#timelineWrapper`, `#timelineTrack` | Default view, paginated (10→+50→all) |
-| 8 | Trends | `#trendsSection` | SVG charts, stat card, vocab analysis cards |
+| 7c | Filters | `#filtersBar` | Collapsible month/category filter toggles |
+| 7d | Grid View | `#wordsGrid` | CSS grid, hidden by default |
+| 7e | Timeline | `#timelineWrapper`, `#timelineTrack` | Default view, paginated (10→+50→all) |
+| 8 | Trends | `#trendsSection` | Two tabs: לפי חודשים / לפי סדר רכישה |
 | 8a | Growth Chart | `#trendsChart`, `#trendsSvg` | Cumulative line+area, interactive cursor |
 | 8b | Delta Chart | `#deltaChart`, `#deltaSvg` | Bar chart, best month highlighted pink |
 | 8c | Stat Card | `#trendsStatCard` | Shimmer animation, Lucide trending-up icon |
 | 8d | Vocab Cards | `#vocabCards` | Populated by vocab-charts.js |
-| 9 | Edit Modal | `#editModal` | View/Edit toggle, z-index 200 |
+| 8e | Noun Bias | `#acqNounBiasCanvas` | Line chart: noun ratio over vocabulary growth |
+| 8f | Rolling Mix | `#acqPulseCanvas` | Stacked bars per word window |
+| 8g | Milestones | `#acqMilestonesCanvas` | Category composition at milestones |
+| 8h | Acq Stat | `#acqStatCard` | Stat card for acquisition tab |
+| 8i | Insights | `#acqInsightsList` | Auto-generated textual insight cards |
+| 9 | Edit Modal | `#editModal` | View/Edit/Add-evo toggle, z-index 200 |
 | 10 | Evo Modal | `#evoModal` | Vertical chain with reorder, z-index 200 |
 | 11 | Delete Modal | `#deleteConfirmModal` | Custom styled, NEVER use native confirm() |
 | 12 | Footer | `.main-footer` | Copyright, export btn, tests.html link, docs.html link |
@@ -243,11 +252,56 @@ Words link via `linked_to` field forming directed graphs:
 
 **Sub-categories** in vocabulary.json: people, sound_effects, animals, food_drink (22 words = 26%), body_parts, household, toys_and_routines, clothing, actions, routines_and_games, attributes, assertions, outside, unclear.
 
-### Charts
+### Trends Section Tabs
 
-1. **Stacked Bars** (`vchart1`): Category counts per month, with slider and persistent breakdown below
-2. **Proportional Bar** (`vchart2`): Relative % composition, animated transitions (easing 0.15/frame), wave view toggle
-3. All charts use canvas with `devicePixelRatio` scaling for retina displays
+The trends section has two tabs:
+- **📅 לפי חודשים** (`growthView`): Charts organized by baby's age in months
+- **🔢 לפי סדר רכישה** (`acquisitionView`): Charts organized by word acquisition order
+
+Tab switching uses `requestAnimationFrame` before rendering to ensure correct canvas dimensions.
+
+### Charts — "לפי חודשים" Tab
+
+1. **Cumulative Growth** (SVG, `trendsSvg`): Total words over time, interactive cursor
+2. **New Words Per Month** (SVG, `deltaSvg`): Bar chart, best month highlighted pink
+3. **Stat Card** (`trendsStatCard`): "בחודש X דניאלה למדה לא פחות מ-Y מילים חדשות"
+4. **Stacked Bars** (`vchart1`): "כמה מילים בכל קטגוריה לפי גיל" — with slider and breakdown
+5. **Proportional Bar** (`vchart2`): "מה החלק של כל קטגוריה מתוך כלל המילים" — animated, wave toggle
+
+### Charts — "לפי סדר רכישה" Tab
+
+1. **Noun Bias Trend** (`acqNounBiasCanvas`): Line chart showing noun-to-other ratio over vocabulary growth
+2. **Rolling Category Mix** (`acqPulseCanvas`): Horizontal stacked bars per word window (configurable size)
+3. **Milestone Comparison** (`acqMilestonesCanvas`): Category composition at key milestones
+4. **Stat Card** (`acqStatCard`): Dynamic stat about diversity, noun bias, or category spread
+5. **Insights** (`acqInsightsList`): Auto-generated textual insights (burst, late emergence, dominance, etc.)
+
+### Chart Design Standards
+
+All charts use canvas with `devicePixelRatio` scaling for retina displays.
+
+#### Percentage Display Rules
+- Percentages ≥ 10%: round to integer (`Math.round`)
+- Percentages < 10%: show 1 decimal place (`.toFixed(1)`)
+- **Always show actual word count alongside percentage** — never percentage alone
+- Format: `count (pct%)` inside bars, `count מילים · pct%` in labels
+
+#### Stat Card Pattern
+Stat cards (`.trends-stat-card`) follow this design:
+- White card with rounded corners (20px), centered text
+- Use `<span class="stat-highlight">` for key data (month name, count, percentage)
+- Highlights use `statShimmer` animation (gradient sweep) when revealed
+- Icon via Lucide (`<i data-lucide="...">`) with `.stat-icon` class
+- Text format: narrative sentence with embedded highlights, e.g. "בחודש **X** דניאלה למדה לא פחות מ-**Y מילים חדשות**"
+- Reveal via `IntersectionObserver` with `threshold: 0.3`
+- Stagger highlight animation delays: 0.3s, 1.5s, 2.5s
+
+#### Chart Card Pattern (acquisition)
+- `.acq-card` class with title (`.acq-card-title`) and subtitle (`.acq-card-subtitle`)
+- Title: dynamic, generated from data (e.g. `getStreamTitle()`)
+- Subtitle: static description explaining what the chart shows
+- Tooltip area for click interaction details
+- Legend row with colored dots
 
 ### When Adding Words to DB
 
@@ -290,7 +344,7 @@ Words link via `linked_to` field forming directed graphs:
 grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
 ```
 
-Increment `?v=N` for every file you changed. Current versions: styles.css?v=16, app.js?v=18, vocab-charts.js?v=12.
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=17, app.js?v=19, vocab-charts.js?v=12.
 
 ### 2. RTL Arrows
 
