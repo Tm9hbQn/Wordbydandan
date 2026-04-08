@@ -51,7 +51,7 @@ Understanding this prevents 90% of "it doesn't work" issues:
 
 ```
 1. Google Fonts (preconnect + stylesheet)
-2. css/styles.css?v=17          ← all visual styles
+2. css/styles.css?v=18          ← all visual styles
 3. HTML body renders
 4. Supabase JS SDK (CDN)        ← must load before app.js
 5. Lucide Icons (CDN)           ← must load before app.js calls lucide.createIcons()
@@ -344,7 +344,7 @@ Stat cards (`.trends-stat-card`) follow this design:
 grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
 ```
 
-Increment `?v=N` for every file you changed. Current versions: styles.css?v=17, app.js?v=19, vocab-charts.js?v=12.
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=18, app.js?v=19, vocab-charts.js?v=12.
 
 ### 2. RTL Arrows
 
@@ -416,6 +416,7 @@ grep 'words-title' index.html  # Emoji 💬 on the RIGHT/start in RTL
 | Word linking uses `<select>` | Regression | Must use fuzzy search input |
 | vocab-charts shows stale data | vocabulary.json cached | Already uses `?t=Date.now()` bust |
 | Edit modal stuck in edit mode | `switchToViewMode()` not called | Verify modal state on open |
+| Delta chart no spacing from chart above | `.trends-chart-container` had no margin-top | Added `.trends-chart-container + .trends-chart-container { margin-top: 1.2rem }` |
 
 ---
 
