@@ -34,6 +34,7 @@
 ├── install.html            # Download/install page for PWA and widget
 ├── manifest.webmanifest    # PWA manifest — app name, icons, shortcuts, display mode
 ├── sw.js                   # Service Worker — caching, offline, push notifications
+├── version.json            # Remote version check — triggers update modal in app
 ├── CLAUDE.md               # THIS FILE — read before every task
 ├── IMPROVEMENTS.md         # 20/80 optimization roadmap
 ├── css/
@@ -63,7 +64,8 @@
 │   │   └── AndroidManifest.xml
 │   ├── app/build.gradle.kts
 │   ├── build.gradle.kts
-│   └── settings.gradle.kts
+│   ├── settings.gradle.kts
+│   └── release.keystore        # Persistent APK signing key (committed)
 └── .github/workflows/
     ├── deploy.yml              # GitHub Pages deployment
     └── build-widget.yml        # Android widget APK build
@@ -75,12 +77,12 @@ Understanding this prevents 90% of "it doesn't work" issues:
 
 ```
 1. Google Fonts (preconnect + stylesheet)
-2. css/styles.css?v=20          ← all visual styles
+2. css/styles.css?v=21          ← all visual styles
 3. PWA manifest + meta tags     ← manifest.webmanifest, theme-color, apple-mobile-web-app
 4. HTML body renders
 5. Supabase JS SDK (CDN)        ← must load before app.js
 6. Lucide Icons (CDN)           ← must load before app.js calls lucide.createIcons()
-7. js/app.js?v=22               ← main logic + PWA module, runs on DOMContentLoaded
+7. js/app.js?v=23               ← main logic + PWA module, runs on DOMContentLoaded
 7b. js/acquisition-analysis.js?v=3 ← acquisition analysis engine (module)
 8. js/vocab-charts.js?v=14      ← chart IIFE, exposes VocabCharts.render(), called by app.js
 9. Service Worker (sw.js)       ← registered by app.js initPWA(), runs in background thread
@@ -184,7 +186,8 @@ All DB operations follow this pattern:
 | 11 | Delete Modal | `#deleteConfirmModal` | Custom styled, NEVER use native confirm() |
 | 12 | Install Banner | `#pwaInstallBanner` | PWA install prompt, fixed bottom, z-index 150 |
 | 13 | Realtime Toast | `#realtimeToast` | Real-time new word notification, fixed top center, z-index 250 |
-| 14 | Footer | `.main-footer` | Copyright, export btn, install page link |
+| 14 | Update Modal | `#updateModal` | Version check popup, mandatory blocks app, optional dismissable, z-index 200 |
+| 15 | Footer | `.main-footer` | Copyright, export btn, install page link |
 
 ## Design System
 
@@ -443,6 +446,31 @@ The app is a fully installable PWA. Users visit the site on Android/iOS and get 
 | `deferredInstallPrompt` | Stored install prompt event |
 | `realtimeChannel` | Supabase Realtime channel |
 
+### Version Check & Update System
+
+On each app load, `checkForUpdates()` fetches `version.json` (with cache-busting query param) and compares against `localStorage.app_version`.
+
+**`version.json` format:**
+```json
+{
+  "version": "1.0.0",
+  "mandatory": false,
+  "message": "גרסה ראשונה של האפליקציה"
+}
+```
+
+**Behavior:**
+- **Mandatory update** (`mandatory: true`): Modal blocks entire app, no dismiss button, must tap "עדכנו עכשיו" which clears SW cache and navigates to `install.html`
+- **Optional update** (`mandatory: false`): Modal has dismiss button ("אחר כך"), reappears on every app open until user updates or version.json changes
+- Version stored in `localStorage.app_version` after user installs/updates
+- Update button sends `CLEAR_CACHE` message to SW, then navigates to `install.html`
+
+**To push an update:**
+1. Edit `version.json` — bump version, set mandatory flag, write Hebrew message
+2. Push to main — GitHub Pages deploys, all app instances pick up new version on next load
+
+**Related DOM:** `#updateModal`, `.update-modal-content`, `#updateTitle`, `#updateMessage`, `#updateVersion`, `#updateBtn`, `#dismissUpdate`
+
 ## Android Widget (Companion App)
 
 ### Overview
@@ -499,7 +527,7 @@ A minimal native Android app that provides a home screen widget for quick word a
 grep 'app.js?v=' index.html && grep 'styles.css?v=' index.html && grep 'vocab-charts.js?v=' index.html
 ```
 
-Increment `?v=N` for every file you changed. Current versions: styles.css?v=20, app.js?v=22, acquisition-analysis.js?v=3, vocab-charts.js?v=14.
+Increment `?v=N` for every file you changed. Current versions: styles.css?v=21, app.js?v=23, acquisition-analysis.js?v=3, vocab-charts.js?v=14.
 
 ### 2. RTL Arrows
 

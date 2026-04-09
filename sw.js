@@ -3,7 +3,7 @@
  * Handles: caching, offline support, push notifications
  */
 
-const CACHE_NAME = 'wordbydandan-v2';
+const CACHE_NAME = 'wordbydandan-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
