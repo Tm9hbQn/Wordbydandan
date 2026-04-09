@@ -3296,6 +3296,78 @@ body::-webkit-scrollbar-thumb {
   flex-shrink: 0;
 }
 
+/* ===== Update Modal ===== */
+.update-modal-content {
+  position: relative;
+  background: white;
+  border-radius: 24px;
+  padding: 2.5rem 2rem 2rem;
+  max-width: 340px;
+  margin: auto;
+  text-align: center;
+  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.25);
+  animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.update-modal-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.update-modal-title {
+  font-family: 'Secular One', sans-serif;
+  font-size: 1.3rem;
+  color: var(--deep-purple);
+  margin-bottom: 0.6rem;
+}
+
+.update-modal-message {
+  font-size: 0.95rem;
+  color: var(--deep-purple);
+  line-height: 1.6;
+  margin-bottom: 0.4rem;
+}
+
+.update-modal-version {
+  font-size: 0.8rem;
+  color: var(--soft-purple);
+  opacity: 0.6;
+  margin-bottom: 1.5rem;
+}
+
+.update-modal-btn {
+  width: 100%;
+  padding: 0.85rem;
+  font-family: 'Secular One', sans-serif;
+  font-size: 1rem;
+  background: linear-gradient(135deg, var(--soft-purple), var(--hot-pink));
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  margin-bottom: 0.6rem;
+  transition: transform 0.2s;
+}
+
+.update-modal-btn:active {
+  transform: scale(0.97);
+}
+
+.update-modal-dismiss {
+  background: none;
+  border: none;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 0.9rem;
+  color: var(--soft-purple);
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.update-modal-dismiss.hidden {
+  display: none;
+}
+
 /* ===== PWA: Standalone Mode Adjustments ===== */
 @media all and (display-mode: standalone) {
   body {

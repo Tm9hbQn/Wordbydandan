@@ -427,6 +427,18 @@
   </div>
 
   <!-- Real-time notification toast -->
+
+  <!-- Update Modal -->
+  <div class="modal-overlay hidden" id="updateModal">
+    <div class="update-modal-content">
+      <div class="update-modal-icon">🔄</div>
+      <h3 class="update-modal-title" id="updateModalTitle">גרסה חדשה זמינה!</h3>
+      <p class="update-modal-message" id="updateModalMessage"></p>
+      <p class="update-modal-version" id="updateModalVersion"></p>
+      <button class="update-modal-btn" id="updateModalBtn">עדכנו עכשיו</button>
+      <button class="update-modal-dismiss hidden" id="updateModalDismiss">אחר כך</button>
+    </div>
+  </div>
   <div class="realtime-toast hidden" id="realtimeToast">
     <span class="realtime-toast-emoji">🌟</span>
     <span class="realtime-toast-text" id="realtimeToastText"></span>

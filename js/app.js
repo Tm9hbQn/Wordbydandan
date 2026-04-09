@@ -3457,6 +3457,7 @@ function initPWA() {
   setupInstallPrompt();
   initRealtime();
   initPushNotifications();
+  checkForUpdates();
 }
 
 /* --- Service Worker Registration --- */
@@ -3699,6 +3700,70 @@ function showRealtimeToast(text, onClick) {
     toast.onclick = null;
     clearTimeout(showRealtimeToast._timer);
   };
+}
+
+/* --- Version Check & Update Modal --- */
+async function checkForUpdates() {
+  try {
+    const resp = await fetch('./version.json?_=' + Date.now());
+    if (!resp.ok) return;
+    const remote = await resp.json();
+    const localVersion = localStorage.getItem('app_version');
+
+    // First install — save version, no popup
+    if (!localVersion) {
+      localStorage.setItem('app_version', remote.version);
+      return;
+    }
+
+    // Same version — nothing to do
+    if (localVersion === remote.version) return;
+
+    // New version available — show update modal
+    showUpdateModal(remote);
+  } catch (e) {
+    // Network error — skip silently
+  }
+}
+
+function showUpdateModal(remote) {
+  const modal = document.getElementById('updateModal');
+  const message = document.getElementById('updateModalMessage');
+  const version = document.getElementById('updateModalVersion');
+  const updateBtn = document.getElementById('updateModalBtn');
+  const dismissBtn = document.getElementById('updateModalDismiss');
+  if (!modal) return;
+
+  message.textContent = remote.message || 'עדכון חדש זמין לאפליקציה';
+  version.textContent = 'גרסה ' + remote.version;
+
+  if (remote.mandatory) {
+    // Mandatory: no dismiss, can't close
+    dismissBtn.classList.add('hidden');
+    modal.onclick = null; // prevent closing by clicking overlay
+  } else {
+    // Optional: can dismiss, but comes back next open
+    dismissBtn.classList.remove('hidden');
+    dismissBtn.onclick = () => {
+      modal.classList.add('hidden');
+    };
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    };
+  }
+
+  updateBtn.onclick = () => {
+    // Save new version so modal won't show again
+    localStorage.setItem('app_version', remote.version);
+    // Clear service worker cache to force fresh load
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage('CLEAR_CACHE');
+    }
+    // Navigate to install page
+    window.location.href = 'install.html';
+  };
+
+  modal.classList.remove('hidden');
 }
 
 /* --- Request notification permission after first word add --- */
