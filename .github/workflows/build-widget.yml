@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'android-widget/**'
+      - '.github/workflows/build-widget.yml'
   workflow_dispatch:
 
 permissions:
@@ -13,9 +14,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: android-widget
 
     steps:
       - name: Checkout
@@ -27,33 +25,45 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Accept Android SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Make gradlew executable
+      - name: Install Android SDK components
         run: |
-          echo '#!/bin/sh' > gradlew
-          echo 'exec gradle "$@"' >> gradlew
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            --sdk_root=$ANDROID_HOME
+
+      - name: Generate Gradle wrapper
+        working-directory: android-widget
+        run: |
+          gradle wrapper --gradle-version=8.5
           chmod +x gradlew
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon
+        working-directory: android-widget
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: |
+          mv android-widget/app/build/outputs/apk/debug/app-debug.apk \
+             android-widget/app/build/outputs/apk/debug/dandan-widget.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: dandan-widget
-          path: android-widget/app/build/outputs/apk/debug/app-debug.apk
+          path: android-widget/app/build/outputs/apk/debug/dandan-widget.apk
 
       - name: Create Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: widget-v${{ github.run_number }}
-          name: "וויג'ט דנדן v${{ github.run_number }}"
+          name: "וויג׳ט דנדן v${{ github.run_number }}"
           body: |
-            קובץ התקנה של הוויג'ט להוספת מילים מהירה ממסך הבית.
+            קובץ התקנה של הוויג׳ט להוספת מילים מהירה ממסך הבית.
 
-            הורידו את הקובץ, פתחו אותו בטלפון, והתקינו.
+            הורידו את הקובץ dandan-widget.apk, פתחו אותו בטלפון, והתקינו.
             אם מופיעה אזהרה על התקנה ממקור לא ידוע - אשרו.
-          files: android-widget/app/build/outputs/apk/debug/app-debug.apk
+          files: android-widget/app/build/outputs/apk/debug/dandan-widget.apk
