@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">מילים של דנדן</string>
+    <string name="widget_name">הוספת מילה — דנדן</string>
+    <string name="widget_title">המילים של דניאלה ✨</string>
+    <string name="widget_input_hint">לחצו להוספת מילה חדשה\u2026</string>
+    <string name="widget_add_btn">הוסיפו 🌟</string>
+    <string name="dialog_title">מילה חדשה!</string>
+    <string name="dialog_word_hint">כתבו מילה\u2026</string>
+    <string name="dialog_notes_hint">הוסיפו הקשר או סיפור (אופציונלי)\u2026</string>
+    <string name="dialog_submit">הוסיפו 🌟</string>
+    <string name="dialog_cancel">ביטול</string>
+    <string name="dialog_age_label">באיזה גיל?</string>
+    <string name="dialog_notes_label">הערות</string>
+    <string name="dialog_category_label">קטגוריה</string>
+    <string name="dialog_now">עכשיו!</string>
+    <string name="success_message">נוספה בהצלחה! 🌟</string>
+    <string name="error_message">שגיאה, נסו שוב</string>
+    <string name="error_empty">כתבו מילה קודם</string>
+    <string name="launcher_message">פתחו את האפליקציה המלאה בדפדפן</string>
+    <string name="word_count_format">%d מילים עד עכשיו</string>
+</resources>

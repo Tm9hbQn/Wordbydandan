@@ -55,6 +55,21 @@
     └── functions/
         └── notify-new-word/
             └── index.ts    # Edge Function for push notifications
+├── android-widget/             # Native Android widget companion app
+│   ├── app/src/main/
+│   │   ├── kotlin/com/dandan/wordwidget/
+│   │   │   ├── AddWordActivity.kt    # Dialog-style quick add
+│   │   │   ├── WordWidgetProvider.kt  # Widget provider
+│   │   │   ├── SupabaseApi.kt         # REST API calls
+│   │   │   └── LauncherActivity.kt    # Opens PWA in browser
+│   │   ├── res/                        # Layouts, drawables, values
+│   │   └── AndroidManifest.xml
+│   ├── app/build.gradle.kts
+│   ├── build.gradle.kts
+│   └── settings.gradle.kts
+└── .github/workflows/
+    ├── deploy.yml              # GitHub Pages deployment
+    └── build-widget.yml        # Android widget APK build
 ```
 
 ## Loading Order & Dependencies
@@ -430,6 +445,41 @@ The app is a fully installable PWA. Users visit the site on Android/iOS and get 
 |----------|---------|
 | `deferredInstallPrompt` | Stored install prompt event |
 | `realtimeChannel` | Supabase Realtime channel |
+
+## Android Widget (Companion App)
+
+### Overview
+A minimal native Android app that provides a home screen widget for quick word addition. The widget calls the Supabase REST API directly — no browser needed.
+
+### How It Works
+1. Widget on home screen shows app branding and "tap to add" prompt
+2. Tapping opens a transparent dialog activity with the full add flow
+3. The dialog has: word input, age picker, notes, category, submit
+4. On submit, calls Supabase REST API and closes
+
+### Building the APK
+- GitHub Actions workflow (`build-widget.yml`) auto-builds on push to `main`
+- APK is uploaded as a GitHub Release artifact
+- Family members download the APK from the Releases page and install directly (sideload)
+
+### Key Files
+| File | Purpose |
+|------|---------|
+| `AddWordActivity.kt` | Dialog-style activity with full add flow |
+| `WordWidgetProvider.kt` | Widget lifecycle, click handling, word count |
+| `SupabaseApi.kt` | Direct REST API calls to Supabase (no SDK) |
+| `LauncherActivity.kt` | Opens PWA URL in browser |
+| `widget_layout.xml` | Widget home screen appearance |
+| `activity_add_word.xml` | Dialog layout |
+| `build-widget.yml` | GitHub Actions APK build workflow |
+
+### Installation
+1. On Android phone, open the GitHub Releases page
+2. Download the APK file
+3. Open the downloaded file
+4. Allow "Install from unknown sources" if prompted
+5. Install
+6. Long-press home screen → Widgets → find "דנדן" → add to home screen
 
 ---
 

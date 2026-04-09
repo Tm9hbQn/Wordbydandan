@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pink">#FFE5EC</color>
+    <color name="hot_pink">#FF6B9D</color>
+    <color name="deep_purple">#2D1B69</color>
+    <color name="soft_purple">#6C5CE7</color>
+    <color name="bg">#FFF9FB</color>
+    <color name="lavender">#F3E5F5</color>
+    <color name="teal">#4ECDC4</color>
+    <color name="white">#FFFFFF</color>
+    <color name="hint">#CCCCCC</color>
+    <color name="widget_bg">#FFFFFFFF</color>
+    <color name="overlay_bg">#80000000</color>
+</resources>

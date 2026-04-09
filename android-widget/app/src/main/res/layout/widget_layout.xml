@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="16dp"
+    android:gravity="center"
+    android:layoutDirection="rtl">
+
+    <!-- Title row -->
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_title"
+        android:textSize="16sp"
+        android:textColor="@color/soft_purple"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Fake input field (clickable) -->
+    <TextView
+        android:id="@+id/widget_input_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_input_hint"
+        android:textSize="15sp"
+        android:textColor="@color/hint"
+        android:background="@drawable/input_bg"
+        android:padding="12dp"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Word count -->
+    <TextView
+        android:id="@+id/widget_word_count"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="@color/deep_purple"
+        android:gravity="center"
+        android:alpha="0.6" />
+
+</LinearLayout>

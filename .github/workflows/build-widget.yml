@@ -1,0 +1,59 @@
+name: Build Widget APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android-widget/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-widget
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make gradlew executable
+        run: |
+          echo '#!/bin/sh' > gradlew
+          echo 'exec gradle "$@"' >> gradlew
+          chmod +x gradlew
+
+      - name: Build Debug APK
+        run: gradle assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dandan-widget
+          path: android-widget/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: widget-v${{ github.run_number }}
+          name: "וויג'ט דנדן v${{ github.run_number }}"
+          body: |
+            קובץ התקנה של הוויג'ט להוספת מילים מהירה ממסך הבית.
+
+            הורידו את הקובץ, פתחו אותו בטלפון, והתקינו.
+            אם מופיעה אזהרה על התקנה ממקור לא ידוע - אשרו.
+          files: android-widget/app/build/outputs/apk/debug/app-debug.apk
